@@ -3,8 +3,7 @@
 Thumbs.db
 
 # JetBrains Rider / IntelliJ
-**/.idea/          # ignore all .idea folders...
-!/.idea/           # ...except the root one
+**/.idea/
 *.iml
 out/
 shelf/
@@ -15,49 +14,3 @@ modules.xml
 httpRequests/
 dataSources/
 dataSources.local.xml
-
-# VS / VS Code
-.vs/
-.vscode/
-
-# .NET build artifacts
-**/bin/
-**/obj/
-**/artifacts/
-**/[Dd]ebug/
-**/[Rr]elease/
-*.exe
-*.dll
-*.pdb
-*.cache
-*.log
-
-# Tests & coverage
-[Tt]est[Rr]esults/
-*.coverage*
-BenchmarkDotNet.Artifacts/
-
-# User-specific IDE files
-*.user
-*.suo
-*.userosscache
-*.sln.DotSettings.user
-*.csproj.user
-
-# NuGet
-packages/
-*.nupkg
-
-# Local databases
-*.db
-*.db-shm
-*.db-wal
-*.sqlite
-*.mdf
-*.ldf
-
-# Config with secrets (keep a template version without secrets)
-appsettings.Development.json
-appsettings.Local.json
-appsettings.*.local.json
-secrets.json
