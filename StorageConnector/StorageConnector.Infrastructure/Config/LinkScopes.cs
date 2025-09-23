@@ -1,0 +1,10 @@
+﻿using StorageConnector.Application;
+using StorageConnector.Domain;
+
+namespace StorageConnector.Infrastructure;
+
+public sealed class LinkScopes {
+    public string[] For(ProviderType p) => p == ProviderType.Google
+        ? new[] { "openid", "email", "profile", "https://www.googleapis.com/auth/drive.readonly", "offline_access" }
+        : new[] { "offline_access", "Files.Read", "Sites.Read.All" };
+}
