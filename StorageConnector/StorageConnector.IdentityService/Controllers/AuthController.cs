@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using StorageConnector.Api.Contracts.Auth;
+using StorageConnector.Contracts.Auth;
 using StorageConnector.Infrastructure.Data;
 using StorageConnector.Infrastructure.Email;
 
-namespace StorageConnector.Api.Controllers;
+namespace StorageConnector.IdentityService.Controllers;
 
 [ApiController]
 [Route("api/auth")]
@@ -16,7 +16,11 @@ public sealed class AuthController : ControllerBase
     private readonly IEmailSender _email;
 
     public AuthController(UserManager<ApplicationUser> users, SignInManager<ApplicationUser> signIn, IEmailSender email)
-    { _users = users; _signIn = signIn; _email = email; }
+    {
+        _users = users;
+        _signIn = signIn;
+        _email = email;
+    }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
@@ -25,7 +29,6 @@ public sealed class AuthController : ControllerBase
         var result = await _users.CreateAsync(user, dto.Password);
         if (!result.Succeeded) return BadRequest(result.Errors);
 
-        // Generate confirm token + link
         var token = await _users.GenerateEmailConfirmationTokenAsync(user);
         var url = Url.Action(
             action: nameof(ConfirmEmail),
@@ -37,10 +40,9 @@ public sealed class AuthController : ControllerBase
         await _email.SendAsync(user.Email!, "Confirm your StorageConnector account",
             $"Click to confirm: <a href=\"{url}\">{url}</a>");
 
-        // 202 Accepted – user must confirm before login
         return Accepted(new { message = "Registration successful. Check your email to confirm." });
     }
-    
+
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
     {
@@ -50,15 +52,14 @@ public sealed class AuthController : ControllerBase
         var res = await _users.ConfirmEmailAsync(user, token);
         if (!res.Succeeded) return BadRequest(res.Errors);
 
-        // Optionally sign-in after confirm, or just redirect to a SPA route
         return Redirect("/auth/confirmed");
     }
-    
+
     [HttpPost("resend-confirmation")]
     public async Task<IActionResult> Resend([FromBody] LoginDto dto)
     {
         var user = await _users.FindByEmailAsync(dto.Email);
-        if (user is null) return Ok(); // don't reveal user existence
+        if (user is null) return Ok();
 
         var token = await _users.GenerateEmailConfirmationTokenAsync(user);
         var url = Url.Action(nameof(ConfirmEmail), "Auth",
@@ -77,7 +78,7 @@ public sealed class AuthController : ControllerBase
         if (user is null) return Unauthorized();
 
         if (!await _users.IsEmailConfirmedAsync(user))
-            return Forbid(); // or return StatusCode(403, "Email not confirmed")
+            return Forbid();
 
         var res = await _signIn.PasswordSignInAsync(user, dto.Password, isPersistent: true, lockoutOnFailure: true);
         return res.Succeeded ? Ok() : Unauthorized();

@@ -15,11 +15,13 @@
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+        <PackageReference Include="Yarp.ReverseProxy" Version="2.1.0" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\StorageConnector.Application\StorageConnector.Application.csproj" />
       <ProjectReference Include="..\StorageConnector.Infrastructure\StorageConnector.Infrastructure.csproj" />
+      <ProjectReference Include="..\StorageConnector.Contracts\StorageConnector.Contracts.csproj" />
     </ItemGroup>
 
 </Project>

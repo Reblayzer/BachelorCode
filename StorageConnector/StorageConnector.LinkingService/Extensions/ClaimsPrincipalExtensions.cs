@@ -1,6 +1,6 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 
-namespace StorageConnector.Api.Extensions;
+namespace StorageConnector.LinkingService.Extensions;
 
 public static class ClaimsPrincipalExtensions
 {

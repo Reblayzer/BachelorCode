@@ -3,25 +3,22 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StorageConnector.Infrastructure.Data;
+using StorageConnector.Infrastructure.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DB
-builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+// Database
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
 // Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
-{
-    opts.SignIn.RequireConfirmedEmail = true;
-    opts.User.RequireUniqueEmail = true;
-})
-.AddEntityFrameworkStores<AppDbContext>()
-.AddDefaultTokenProviders();
-
-builder.Services.AddAuthorization();
-
-builder.Services.AddMemoryCache();
+    {
+        opts.SignIn.RequireConfirmedEmail = true;
+        opts.User.RequireUniqueEmail = true;
+    })
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 
 var keysPath = Path.Combine(builder.Environment.ContentRootPath, "..", "dp-keys");
 Directory.CreateDirectory(keysPath);
@@ -30,11 +27,13 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
     .SetApplicationName("StorageConnector");
 
-// Web
+// Email
+builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection("Email:SendGrid"));
+builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
+
+builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
 var app = builder.Build();
 
@@ -47,5 +46,5 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapReverseProxy();
+app.MapControllers();
 app.Run();
