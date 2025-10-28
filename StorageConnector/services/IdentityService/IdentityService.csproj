@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>IdentityService-9A2E9A2E-5C7B-4A8C-9A81-IDENTITY</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\Infrastructure\Infrastructure.csproj" />
+    <ProjectReference Include="..\..\libs\Core\Application\Application.csproj" />
+    <ProjectReference Include="..\..\libs\Core\Domain\Domain.csproj" />
+    <ProjectReference Include="..\..\libs\Contracts\Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

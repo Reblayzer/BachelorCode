@@ -1,0 +1,6 @@
+@LinkingService_HostAddress = http://localhost:5168
+
+GET {{LinkingService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
