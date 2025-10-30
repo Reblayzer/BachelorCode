@@ -2,8 +2,12 @@ using System.IO;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 using Application;
+using Microsoft.Extensions.DependencyInjection;
 using Application.Interfaces;
+using LinkingService.Extensions;
 using Domain;
 using Infrastructure;
 using Infrastructure.Config;
@@ -48,21 +52,9 @@ builder.Services.AddCors(options =>
             .AllowCredentials());
 });
 
-builder.Services.AddScoped<LinkProviderService>();
-builder.Services.AddScoped<ITokenStore, EfTokenStore>();
-builder.Services.AddSingleton<IStateStore, CacheStateStore>();
-builder.Services.AddSingleton<LinkScopes>();
-
-builder.Services.Configure<GoogleOAuthOptions>(builder.Configuration.GetSection("OAuth:Google"));
-builder.Services.Configure<MicrosoftOAuthOptions>(builder.Configuration.GetSection("OAuth:Microsoft"));
-builder.Services.Configure<FrontendOptions>(builder.Configuration.GetSection("Frontend"));
-builder.Services.AddHttpClient<GoogleOAuthClient>();
-builder.Services.AddHttpClient<MicrosoftOAuthClient>();
-builder.Services.AddScoped<IOAuthClient>(sp => sp.GetRequiredService<GoogleOAuthClient>());
-builder.Services.AddScoped<IOAuthClient>(sp => sp.GetRequiredService<MicrosoftOAuthClient>());
-
-builder.Services.AddScoped<IFileProvider>(_ => new NullFileProvider(ProviderType.Google));
-builder.Services.AddScoped<IFileProvider>(_ => new NullFileProvider(ProviderType.Microsoft));
+// Register linking service infrastructure (IoC wiring) from a shared extension so tests
+// and Program can use the same registrations.
+builder.Services.AddLinkingServiceInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -77,6 +69,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Map domain exceptions to friendly HTTP responses for the SPA.
+app.UseMiddleware<LinkingService.Middleware.ExceptionMappingMiddleware>();
+
 app.UseCors("Spa");
 app.UseAuthentication();
 app.UseAuthorization();

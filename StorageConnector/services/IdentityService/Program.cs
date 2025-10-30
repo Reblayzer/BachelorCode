@@ -20,6 +20,12 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddScoped<Application.Interfaces.IUserService, IdentityService.Services.UserService>();
+builder.Services.AddScoped<Application.Interfaces.IConfirmationLinkGenerator, IdentityService.Services.ConfirmationLinkGenerator>();
+
+// Make LinkGenerator's IHttpContextAccessor available to the ConfirmationLinkGenerator
+builder.Services.AddHttpContextAccessor();
+
 var keysPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "data", "dp-keys"));
 Directory.CreateDirectory(keysPath);
 
@@ -42,7 +48,21 @@ builder.Services.AddCors(options =>
 
 // Email
 builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection("Email:SendGrid"));
-builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
+
+// Register a no-op sender in Development to avoid failing sends when SendGrid isn't configured.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<IEmailSender, NoOpEmailSender>();
+}
+else
+{
+    builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
+}
+
+// Validate SendGrid options so misconfiguration fails fast in non-dev environments
+builder.Services.AddOptions<Infrastructure.Email.SendGridOptions>()
+    .Bind(builder.Configuration.GetSection("Email:SendGrid"))
+    .Validate(o => !string.IsNullOrWhiteSpace(o.ApiKey) && !string.IsNullOrWhiteSpace(o.FromEmail), "SendGrid ApiKey and FromEmail must be configured");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -57,6 +77,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// Map domain exceptions to friendly HTTP responses
+app.UseMiddleware<IdentityService.Middleware.ExceptionMappingMiddleware>();
 app.UseCors("Spa");
 app.UseAuthentication();
 app.UseAuthorization();

@@ -1,17 +1,16 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
+using System;
+using System.Threading.Tasks;
+// single using for Http types
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Routing;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
+using Microsoft.Extensions.DependencyInjection;
 using Contracts.Auth;
+using Microsoft.AspNetCore.Http;
 using IdentityService.Controllers;
-using Infrastructure.Data;
 using Infrastructure.Email;
 using Xunit;
-using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
+using Application.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Tests.Controllers;
 
@@ -20,52 +19,41 @@ public sealed class AuthControllerTests
     [Fact]
     public async Task Register_ReturnsAccepted_WhenUserCreatedSuccessfully()
     {
-        // Arrange
-        var userManager = CreateUserManager();
-        userManager.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
-            .ReturnsAsync(IdentityResult.Success);
-        userManager.Setup(m => m.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()))
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.CreateAsync("user@example.com", "Password123!"))
+            .ReturnsAsync((true, Array.Empty<string>(), "user-1"));
+        userService.Setup(u => u.GenerateEmailConfirmationTokenAsync("user-1"))
             .ReturnsAsync("token-123");
 
-        var signInManager = CreateSignInManager(userManager);
         var emailSender = new Mock<IEmailSender>();
 
-        var controller = BuildController(userManager.Object, signInManager.Object, emailSender.Object);
+        var controller = BuildController(userService.Object, emailSender.Object);
 
         var dto = new RegisterDto("user@example.com", "Password123!");
 
-        // Act
         var result = await controller.Register(dto);
 
-        // Assert
         var accepted = Assert.IsType<AcceptedResult>(result);
         Assert.NotNull(accepted.Value);
 
-        userManager.Verify(m => m.CreateAsync(It.Is<ApplicationUser>(u => u.Email == dto.Email), dto.Password), Times.Once);
-        userManager.Verify(m => m.GenerateEmailConfirmationTokenAsync(It.IsAny<ApplicationUser>()), Times.Once);
-        emailSender.Verify(s => s.SendAsync(dto.Email, It.IsAny<string>(), It.Is<string>(body => body.Contains("https://example.com/confirm"))), Times.Once);
+        userService.Verify(m => m.CreateAsync(dto.Email, dto.Password), Times.Once);
+        userService.Verify(m => m.GenerateEmailConfirmationTokenAsync("user-1"), Times.Once);
+        emailSender.Verify(s => s.SendAsync(dto.Email, It.IsAny<string>(), It.Is<string>(body => body.Contains("https://example.com/api/auth/confirm-email"))), Times.Once);
     }
 
     [Fact]
     public async Task Register_ReturnsBadRequest_WhenUserCreationFails()
     {
-        // Arrange
-        var failure = IdentityResult.Failed(new IdentityError { Description = "Email already used" });
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.CreateAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync((false, new[] { "Email already used" }, (string?)null));
 
-        var userManager = CreateUserManager();
-        userManager.Setup(m => m.CreateAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>()))
-            .ReturnsAsync(failure);
-
-        var signInManager = CreateSignInManager(userManager);
         var emailSender = new Mock<IEmailSender>();
-
-        var controller = BuildController(userManager.Object, signInManager.Object, emailSender.Object);
+        var controller = BuildController(userService.Object, emailSender.Object);
         var dto = new RegisterDto("user@example.com", "Password123!");
 
-        // Act
         var result = await controller.Register(dto);
 
-        // Assert
         Assert.IsType<BadRequestObjectResult>(result);
         emailSender.Verify(s => s.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
@@ -73,14 +61,10 @@ public sealed class AuthControllerTests
     [Fact]
     public async Task Login_ReturnsUnauthorized_WhenUserMissing()
     {
-        var userManager = CreateUserManager();
-        var signInManager = CreateSignInManager(userManager);
-        var emailSender = new Mock<IEmailSender>();
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.FindByEmailAsync("missing@example.com")).ReturnsAsync(((string?)null, (string?)null));
 
-        userManager.Setup(m => m.FindByEmailAsync("missing@example.com"))
-            .ReturnsAsync((ApplicationUser?)null);
-
-        var controller = BuildController(userManager.Object, signInManager.Object, emailSender.Object);
+        var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
 
         var result = await controller.Login(new LoginDto("missing@example.com", "whatever"));
 
@@ -90,41 +74,31 @@ public sealed class AuthControllerTests
     [Fact]
     public async Task Login_ReturnsForbid_WhenEmailNotConfirmed()
     {
-        var user = new ApplicationUser { Email = "user@example.com" };
+        var email = "user@example.com";
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.FindByEmailAsync(email)).ReturnsAsync(("user-1", email));
+        userService.Setup(u => u.IsEmailConfirmedAsync("user-1")).ReturnsAsync(false);
 
-        var userManager = CreateUserManager();
-        userManager.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
-        userManager.Setup(m => m.IsEmailConfirmedAsync(user)).ReturnsAsync(false);
+        var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
 
-        var signInManager = CreateSignInManager(userManager);
-        var emailSender = new Mock<IEmailSender>();
-
-        var controller = BuildController(userManager.Object, signInManager.Object, emailSender.Object);
-
-        var result = await controller.Login(new LoginDto(user.Email!, "Password123!"));
+        var result = await controller.Login(new LoginDto(email, "Password123!"));
 
         Assert.IsType<ForbidResult>(result);
-        signInManager.Verify(m => m.PasswordSignInAsync(It.IsAny<ApplicationUser>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
+        userService.Verify(u => u.PasswordSignInAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>()), Times.Never);
     }
 
     [Fact]
     public async Task Login_ReturnsOk_WhenCredentialsValid()
     {
-        var user = new ApplicationUser { Email = "user@example.com" };
+        var email = "user@example.com";
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.FindByEmailAsync(email)).ReturnsAsync(("user-1", email));
+        userService.Setup(u => u.IsEmailConfirmedAsync("user-1")).ReturnsAsync(true);
+        userService.Setup(u => u.PasswordSignInAsync(email, "Password123!", true, true)).ReturnsAsync(true);
 
-        var userManager = CreateUserManager();
-        userManager.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
-        userManager.Setup(m => m.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
+        var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
 
-        var signInManager = CreateSignInManager(userManager);
-        signInManager.Setup(m => m.PasswordSignInAsync(user, "Password123!", true, true))
-            .ReturnsAsync(SignInResult.Success);
-
-        var emailSender = new Mock<IEmailSender>();
-
-        var controller = BuildController(userManager.Object, signInManager.Object, emailSender.Object);
-
-        var result = await controller.Login(new LoginDto(user.Email!, "Password123!"));
+        var result = await controller.Login(new LoginDto(email, "Password123!"));
 
         Assert.IsType<OkResult>(result);
     }
@@ -132,66 +106,34 @@ public sealed class AuthControllerTests
     [Fact]
     public async Task Login_ReturnsUnauthorized_WhenPasswordInvalid()
     {
-        var user = new ApplicationUser { Email = "user@example.com" };
+        var email = "user@example.com";
+        var userService = new Mock<IUserService>();
+        userService.Setup(u => u.FindByEmailAsync(email)).ReturnsAsync(("user-1", email));
+        userService.Setup(u => u.IsEmailConfirmedAsync("user-1")).ReturnsAsync(true);
+        userService.Setup(u => u.PasswordSignInAsync(email, "WrongPassword!", true, true)).ReturnsAsync(false);
 
-        var userManager = CreateUserManager();
-        userManager.Setup(m => m.FindByEmailAsync(user.Email!)).ReturnsAsync(user);
-        userManager.Setup(m => m.IsEmailConfirmedAsync(user)).ReturnsAsync(true);
+        var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
 
-        var signInManager = CreateSignInManager(userManager);
-        signInManager.Setup(m => m.PasswordSignInAsync(user, "WrongPassword!", true, true))
-            .ReturnsAsync(SignInResult.Failed);
-
-        var controller = BuildController(userManager.Object, signInManager.Object, Mock.Of<IEmailSender>());
-
-        var result = await controller.Login(new LoginDto(user.Email!, "WrongPassword!"));
+        var result = await controller.Login(new LoginDto(email, "WrongPassword!"));
 
         Assert.IsType<UnauthorizedResult>(result);
     }
 
-    private static Mock<UserManager<ApplicationUser>> CreateUserManager()
+    private static AuthController BuildController(IUserService users, IEmailSender email)
     {
-        var store = new Mock<IUserStore<ApplicationUser>>();
-        var options = new Mock<IOptions<IdentityOptions>>();
-        options.Setup(o => o.Value).Returns(new IdentityOptions());
+        var httpContext = new DefaultHttpContext();
+        // UrlHelper expects HttpContext.RequestServices to be non-null; provide a service provider with a minimal IRouter
+        var services = new ServiceCollection();
+        services.AddSingleton<Microsoft.AspNetCore.Routing.IRouter>(new TestFakeRouter());
+        httpContext.RequestServices = services.BuildServiceProvider();
 
-        return new Mock<UserManager<ApplicationUser>>(
-            store.Object,
-            options.Object,
-            Mock.Of<IPasswordHasher<ApplicationUser>>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            Mock.Of<ILookupNormalizer>(),
-            new IdentityErrorDescriber(),
-            Mock.Of<IServiceProvider>(),
-            Mock.Of<ILogger<UserManager<ApplicationUser>>>());
-    }
+        var linkGeneratorMock = new Mock<Application.Interfaces.IConfirmationLinkGenerator>();
+        linkGeneratorMock.Setup(l => l.GenerateEmailConfirmationLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .Returns<string, string, string, string>((id, token, scheme, host) => $"{scheme}://{host}/api/auth/confirm-email?userId={id}&token={token}");
 
-    private static Mock<SignInManager<ApplicationUser>> CreateSignInManager(Mock<UserManager<ApplicationUser>> userManager)
-    {
-        var contextAccessor = new Mock<IHttpContextAccessor>();
-        contextAccessor.SetupGet(c => c.HttpContext).Returns(new DefaultHttpContext());
-
-        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<ApplicationUser>>();
-        var options = new Mock<IOptions<IdentityOptions>>();
-        options.Setup(o => o.Value).Returns(new IdentityOptions());
-
-        return new Mock<SignInManager<ApplicationUser>>(
-            userManager.Object,
-            contextAccessor.Object,
-            claimsFactory.Object,
-            options.Object,
-            Mock.Of<ILogger<SignInManager<ApplicationUser>>>(),
-            Mock.Of<IAuthenticationSchemeProvider>(),
-            Mock.Of<IUserConfirmation<ApplicationUser>>());
-    }
-
-    private static AuthController BuildController(UserManager<ApplicationUser> users, SignInManager<ApplicationUser> signIn, IEmailSender email)
-    {
-        var controller = new AuthController(users, signIn, email)
+        var controller = new AuthController(users, email, linkGeneratorMock.Object, Mock.Of<ILogger<AuthController>>())
         {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
-            Url = new StubUrlHelper()
+            ControllerContext = new ControllerContext { HttpContext = httpContext },
         };
 
         controller.Request.Scheme = "https";
@@ -200,19 +142,16 @@ public sealed class AuthControllerTests
         return controller;
     }
 
-    private sealed class StubUrlHelper : IUrlHelper
+    private sealed class TestFakeRouter : Microsoft.AspNetCore.Routing.IRouter
     {
-        public ActionContext ActionContext => new();
+        public Microsoft.AspNetCore.Routing.VirtualPathData? GetVirtualPath(Microsoft.AspNetCore.Routing.VirtualPathContext context) => null;
 
-        public string? Action(UrlActionContext actionContext) => "https://example.com/confirm";
-        public string? Action(string? action, string? controller, object? values, string? protocol, string? host, string? fragment) => "https://example.com/confirm";
-        public string? Action(string? action, string? controller, object? values, string? protocol, string? host) => "https://example.com/confirm";
-        public string? Action(string? action, string? controller, object? values, string? protocol) => "https://example.com/confirm";
-        public string? Action(string? action, string? controller, object? values) => "https://example.com/confirm";
-        public string? Action(string? action, string? controller) => "https://example.com/confirm";
-        public string? Content(string? contentPath) => contentPath;
-        public bool IsLocalUrl(string? url) => true;
-        public string? Link(string? routeName, object? values) => "https://example.com/link";
-        public string? RouteUrl(UrlRouteContext routeContext) => "https://example.com/route";
+        public Task RouteAsync(Microsoft.AspNetCore.Routing.RouteContext context)
+        {
+            return Task.CompletedTask;
+        }
     }
+
+
+
 }

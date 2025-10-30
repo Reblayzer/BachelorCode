@@ -127,6 +127,7 @@ public sealed class MicrosoftOAuthClient : IOAuthClient
         catch (Exception)
         {
             // Microsoft logout endpoint does not always support token revocation; ignore errors.
+            try { Console.WriteLine("Microsoft RevokeAsync: revoke request failed or not supported."); } catch { }
         }
     }
 
@@ -148,12 +149,14 @@ public sealed class MicrosoftOAuthClient : IOAuthClient
         var content = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
         {
+            try { Console.WriteLine($"Microsoft token endpoint returned {(int)response.StatusCode}: {content}"); } catch { }
             throw new InvalidOperationException($"Microsoft token endpoint returned {(int)response.StatusCode}: {content}");
         }
 
         var result = JsonSerializer.Deserialize<T>(content, JsonOptions);
         if (result is null)
         {
+            try { Console.WriteLine("Microsoft: failed to parse response JSON."); } catch { }
             throw new InvalidOperationException("Failed to parse Microsoft response.");
         }
 

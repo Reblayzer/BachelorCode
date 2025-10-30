@@ -5,12 +5,14 @@ using Domain;
 
 namespace Application;
 
-public sealed class LinkProviderService {
+public sealed class LinkProviderService
+{
     private readonly IEnumerable<IOAuthClient> _oauth;
     private readonly ITokenStore _tokens;
     private readonly IStateStore _states;
 
-    public LinkProviderService(IEnumerable<IOAuthClient> oauth, ITokenStore tokens, IStateStore states) {
+    public LinkProviderService(IEnumerable<IOAuthClient> oauth, ITokenStore tokens, IStateStore states)
+    {
         _oauth = oauth; _tokens = tokens; _states = states;
     }
 
@@ -18,15 +20,17 @@ public sealed class LinkProviderService {
 
     static string Base64Url(int bytes) =>
         Convert.ToBase64String(RandomNumberGenerator.GetBytes(bytes))
-            .Replace("+","-").Replace("/","_").TrimEnd('=');
+            .Replace("+", "-").Replace("/", "_").TrimEnd('=');
 
-    static string CodeChallenge(string verifier) {
+    static string CodeChallenge(string verifier)
+    {
         using var sha = SHA256.Create();
         var hash = sha.ComputeHash(Encoding.ASCII.GetBytes(verifier));
-        return Convert.ToBase64String(hash).Replace("+","-").Replace("/","_").TrimEnd('=');
+        return Convert.ToBase64String(hash).Replace("+", "-").Replace("/", "_").TrimEnd('=');
     }
 
-    public async Task<Uri> StartAsync(string userId, ProviderType provider, Uri redirectUri, string[] scopes) {
+    public async Task<Uri> StartAsync(string userId, ProviderType provider, Uri redirectUri, string[] scopes)
+    {
         var state = Base64Url(24);
         var verifier = Base64Url(32);
         var challenge = CodeChallenge(verifier);

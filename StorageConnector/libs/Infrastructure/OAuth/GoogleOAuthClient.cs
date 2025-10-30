@@ -119,6 +119,7 @@ public sealed class GoogleOAuthClient : IOAuthClient
         catch (Exception)
         {
             // Google returns various status codes if the token is already revoked; ignore failures.
+            try { Console.WriteLine("Google RevokeAsync: revoke request failed or token already revoked."); } catch { }
         }
     }
 
@@ -140,12 +141,14 @@ public sealed class GoogleOAuthClient : IOAuthClient
         var content = await response.Content.ReadAsStringAsync();
         if (!response.IsSuccessStatusCode)
         {
+            try { Console.WriteLine($"Google token endpoint returned {(int)response.StatusCode}: {content}"); } catch { }
             throw new InvalidOperationException($"Google token endpoint returned {(int)response.StatusCode}: {content}");
         }
 
         var result = JsonSerializer.Deserialize<T>(content, JsonOptions);
         if (result is null)
         {
+            try { Console.WriteLine("Google: failed to parse response JSON."); } catch { }
             throw new InvalidOperationException("Failed to parse Google response.");
         }
 

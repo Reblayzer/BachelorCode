@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Contracts.Auth;
+using Microsoft.AspNetCore.Http;
 using Infrastructure.Data;
 using Infrastructure.Email;
+using Application.Interfaces;
 
 namespace IdentityService.Controllers;
 
@@ -12,34 +14,44 @@ namespace IdentityService.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private readonly UserManager<ApplicationUser> _users;
-    private readonly SignInManager<ApplicationUser> _signIn;
+    private readonly IUserService _users;
     private readonly IEmailSender _email;
+    private readonly Application.Interfaces.IConfirmationLinkGenerator _linkGenerator;
+    private readonly Microsoft.Extensions.Logging.ILogger<AuthController> _logger;
 
-    public AuthController(UserManager<ApplicationUser> users, SignInManager<ApplicationUser> signIn, IEmailSender email)
+    public AuthController(IUserService users, IEmailSender email, Application.Interfaces.IConfirmationLinkGenerator linkGenerator, Microsoft.Extensions.Logging.ILogger<AuthController> logger)
     {
         _users = users;
-        _signIn = signIn;
         _email = email;
+        _linkGenerator = linkGenerator;
+        _logger = logger;
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email };
-        var result = await _users.CreateAsync(user, dto.Password);
-        if (!result.Succeeded) return BadRequest(result.Errors);
+        var (succeeded, errors, userId) = await _users.CreateAsync(dto.Email, dto.Password);
+        if (!succeeded) return BadRequest(errors);
 
-        var token = await _users.GenerateEmailConfirmationTokenAsync(user);
-        var url = Url.Action(
-            action: nameof(ConfirmEmail),
-            controller: "Auth",
-            values: new { userId = user.Id, token },
-            protocol: Request.Scheme,
-            host: Request.Host.ToString());
+        var token = await _users.GenerateEmailConfirmationTokenAsync(userId!);
+        if (string.IsNullOrEmpty(token))
+        {
+            // Token generation failed unexpectedly — surface an error to the caller.
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to generate email confirmation token." });
+        }
 
-        await _email.SendAsync(user.Email!, "Confirm your StorageConnector account",
-            $"Click to confirm: <a href=\"{url}\">{url}</a>");
+        var url = _linkGenerator.GenerateEmailConfirmationLink(userId!, token, Request.Scheme, Request.Host.ToString());
+
+        try
+        {
+            await _email.SendAsync(dto.Email, "Confirm your StorageConnector account",
+                $"Click to confirm: <a href=\"{url}\">{url}</a>");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send confirmation email to {Email}", dto.Email);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to send confirmation email." });
+        }
 
         return Accepted(new { message = "Registration successful. Check your email to confirm." });
     }
@@ -47,11 +59,11 @@ public sealed class AuthController : ControllerBase
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
     {
-        var user = await _users.FindByIdAsync(userId);
-        if (user is null) return NotFound();
+        var (id, _) = await _users.FindByIdAsync(userId);
+        if (id is null) return NotFound();
 
-        var res = await _users.ConfirmEmailAsync(user, token);
-        if (!res.Succeeded) return BadRequest(res.Errors);
+        var ok = await _users.ConfirmEmailAsync(userId, token);
+        if (!ok) return BadRequest();
 
         return Redirect("/auth/confirmed");
     }
@@ -59,15 +71,27 @@ public sealed class AuthController : ControllerBase
     [HttpPost("resend-confirmation")]
     public async Task<IActionResult> Resend([FromBody] LoginDto dto)
     {
-        var user = await _users.FindByEmailAsync(dto.Email);
-        if (user is null) return Ok();
+        var (userId, email) = await _users.FindByEmailAsync(dto.Email);
+        if (userId is null) return Ok();
 
-        var token = await _users.GenerateEmailConfirmationTokenAsync(user);
-        var url = Url.Action(nameof(ConfirmEmail), "Auth",
-            new { userId = user.Id, token }, Request.Scheme, Request.Host.ToString());
+        var token = await _users.GenerateEmailConfirmationTokenAsync(userId!);
+        if (string.IsNullOrEmpty(token))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to generate email confirmation token." });
+        }
 
-        await _email.SendAsync(user.Email!, "Confirm your StorageConnector account",
-            $"Click to confirm: <a href=\"{url}\">{url}</a>");
+        var url = _linkGenerator.GenerateEmailConfirmationLink(userId!, token, Request.Scheme, Request.Host.ToString());
+
+        try
+        {
+            await _email.SendAsync(email!, "Confirm your StorageConnector account",
+                $"Click to confirm: <a href=\"{url}\">{url}</a>");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to resend confirmation email to {Email}", email);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to send confirmation email." });
+        }
 
         return Accepted(new { message = "Confirmation email sent." });
     }
@@ -75,21 +99,21 @@ public sealed class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        var user = await _users.FindByEmailAsync(dto.Email);
-        if (user is null) return Unauthorized();
+        var (userId, _) = await _users.FindByEmailAsync(dto.Email);
+        if (userId is null) return Unauthorized();
 
-        if (!await _users.IsEmailConfirmedAsync(user))
+        if (!await _users.IsEmailConfirmedAsync(userId))
             return Forbid();
 
-        var res = await _signIn.PasswordSignInAsync(user, dto.Password, isPersistent: true, lockoutOnFailure: true);
-        return res.Succeeded ? Ok() : Unauthorized();
+        var ok = await _users.PasswordSignInAsync(dto.Email, dto.Password, true, true);
+        return ok ? Ok() : Unauthorized();
     }
 
     [Authorize]
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
     {
-        await _signIn.SignOutAsync();
+        await _users.SignOutAsync();
         return NoContent();
     }
 
@@ -100,11 +124,10 @@ public sealed class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId is null)
             return Unauthorized();
-
-        var user = await _users.FindByIdAsync(userId);
-        if (user is null)
+        var (id, email) = await _users.FindByIdAsync(userId);
+        if (id is null)
             return Unauthorized();
 
-        return Ok(new { email = user.Email ?? "" });
+        return Ok(new { email = email ?? "" });
     }
 }
