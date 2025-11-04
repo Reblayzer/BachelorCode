@@ -182,6 +182,15 @@ public sealed class ConnectControllerIntegrationTests : IClassFixture<WebApplica
       return Task.FromResult(a);
     }
 
+    public Task<IReadOnlyList<ProviderAccount>> GetAllByUserAsync(string userId)
+    {
+      var accounts = _store
+        .Where(kv => kv.Key.Item1 == userId)
+        .Select(kv => kv.Value)
+        .ToList();
+      return Task.FromResult<IReadOnlyList<ProviderAccount>>(accounts);
+    }
+
     public Task UpsertAsync(ProviderAccount account)
     {
       _store[(account.UserId, account.Provider)] = account;

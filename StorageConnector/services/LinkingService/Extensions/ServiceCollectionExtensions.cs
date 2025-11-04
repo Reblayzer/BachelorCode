@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Application;
+using Application.Services;
 using Infrastructure;
 using Infrastructure.Config;
 using Infrastructure.FileProviders;
@@ -18,6 +19,7 @@ namespace LinkingService.Extensions
       // Data protection, keys and other app-level wiring are left in Program.cs since they touch environment
 
       services.AddScoped<LinkProviderService>();
+      services.AddScoped<IFileService, FileService>();
       services.AddScoped<ITokenStore, EfTokenStore>();
       services.AddSingleton<IStateStore, CacheStateStore>();
       services.AddSingleton<LinkScopes>();
@@ -47,11 +49,19 @@ namespace LinkingService.Extensions
       services.AddHttpClient<MicrosoftOAuthClient>(client => { client.Timeout = TimeSpan.FromSeconds(15); })
           .AddHttpMessageHandler<RetryHandler>();
 
+      // Configure HttpClients for file provider API calls
+      services.AddHttpClient<GoogleFileProvider>(client => { client.Timeout = TimeSpan.FromSeconds(30); })
+          .AddHttpMessageHandler<RetryHandler>();
+
+      services.AddHttpClient<MicrosoftFileProvider>(client => { client.Timeout = TimeSpan.FromSeconds(30); })
+          .AddHttpMessageHandler<RetryHandler>();
+
       services.AddScoped<IOAuthClient, GoogleOAuthClient>();
       services.AddScoped<IOAuthClient, MicrosoftOAuthClient>();
 
-      services.AddScoped<IFileProvider, GoogleNullFileProvider>();
-      services.AddScoped<IFileProvider, MicrosoftNullFileProvider>();
+      // Register actual file providers (replacing Null implementations)
+      services.AddScoped<IFileProvider, GoogleFileProvider>();
+      services.AddScoped<IFileProvider, MicrosoftFileProvider>();
 
       services.AddScoped<IFileProviderFactory, Factories.FileProviderFactory>();
 

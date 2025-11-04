@@ -153,6 +153,15 @@ public sealed class LinkProviderServiceTests
             return Task.FromResult(account);
         }
 
+        public Task<IReadOnlyList<ProviderAccount>> GetAllByUserAsync(string userId)
+        {
+            var accounts = _accounts
+                .Where(kv => kv.Key.userId == userId)
+                .Select(kv => kv.Value)
+                .ToList();
+            return Task.FromResult<IReadOnlyList<ProviderAccount>>(accounts);
+        }
+
         public Task UpsertAsync(ProviderAccount account)
         {
             _accounts[(account.UserId, account.Provider)] = account;

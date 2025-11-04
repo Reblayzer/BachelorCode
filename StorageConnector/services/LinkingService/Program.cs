@@ -1,5 +1,6 @@
 using System.IO;
 using Microsoft.AspNetCore.DataProtection;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -56,7 +57,8 @@ builder.Services.AddCors(options =>
 // and Program can use the same registrations.
 builder.Services.AddLinkingServiceInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

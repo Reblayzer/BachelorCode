@@ -40,7 +40,7 @@ export const TopNav = () => {
 
   return (
     <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-4">
+      <div className="mx-auto flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1650px' }}>
         <Link to="/" className="text-lg font-semibold text-brand">
           StorageConnector
         </Link>

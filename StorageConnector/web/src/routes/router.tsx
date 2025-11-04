@@ -4,6 +4,7 @@ import { LandingPage } from "../pages/LandingPage";
 import { RegisterPage } from "../pages/RegisterPage";
 import { LoginPage } from "../pages/LoginPage";
 import { ConnectionsPage } from "../pages/ConnectionsPage";
+import { FilesPage } from "../pages/FilesPage";
 import { LinkResultPage } from "../pages/LinkResultPage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
       { path: "register", element: <RegisterPage /> },
       { path: "login", element: <LoginPage /> },
       { path: "connections", element: <ConnectionsPage /> },
+      { path: "files", element: <FilesPage /> },
       {
         path: "connections/success",
         element: <LinkResultPage variant="success" />,

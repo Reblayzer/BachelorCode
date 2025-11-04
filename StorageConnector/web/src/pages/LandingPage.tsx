@@ -1,11 +1,12 @@
-import { Link } from "react-router-dom";
+  import { Link } from "react-router-dom";
 import { useAuthStore } from "../state/auth-store";
 
 export const LandingPage = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   return (
-    <section className="grid gap-10 md:grid-cols-[1.5fr_1fr]">
+    <div className="max-w-7xl mx-auto">
+      <section className="grid gap-10 md:grid-cols-[1.5fr_1fr]">
       <div className="space-y-6">
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
           Manage your cloud storage links in one place.
@@ -55,5 +56,6 @@ export const LandingPage = () => {
         </ul>
       </div>
     </section>
+    </div>
   );
 };

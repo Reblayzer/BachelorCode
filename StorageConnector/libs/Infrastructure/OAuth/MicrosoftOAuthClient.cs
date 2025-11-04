@@ -60,6 +60,11 @@ public sealed class MicrosoftOAuthClient : IOAuthClient
             ["code_challenge_method"] = "S256"
         };
 
+        if (!string.IsNullOrWhiteSpace(_options.Prompt))
+        {
+            query["prompt"] = _options.Prompt!;
+        }
+
         var queryString = string.Join("&",
             query.Select(kvp => $"{WebUtility.UrlEncode(kvp.Key)}={WebUtility.UrlEncode(kvp.Value)}"));
 
