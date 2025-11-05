@@ -65,7 +65,8 @@ public sealed class AuthController : ControllerBase
         var ok = await _users.ConfirmEmailAsync(userId, token);
         if (!ok) return BadRequest();
 
-        return Redirect("/auth/confirmed");
+        // Redirect to the frontend confirmation page
+        return Redirect("http://localhost:5173/auth/confirmed");
     }
 
     [HttpPost("resend-confirmation")]
@@ -129,5 +130,64 @@ public sealed class AuthController : ControllerBase
             return Unauthorized();
 
         return Ok(new { email = email ?? "" });
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId is null)
+            return Unauthorized();
+
+        var succeeded = await _users.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
+        if (!succeeded)
+            return BadRequest(new { message = "Current password is incorrect or new password is invalid." });
+
+        return Ok(new { message = "Password changed successfully." });
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+    {
+        var (userId, email) = await _users.FindByEmailAsync(dto.Email);
+        // Always return OK to prevent email enumeration
+        if (userId is null || email is null)
+            return Ok(new { message = "If that email exists, a password reset link has been sent." });
+
+        var token = await _users.GeneratePasswordResetTokenAsync(userId);
+        if (string.IsNullOrEmpty(token))
+        {
+            _logger.LogError("Failed to generate password reset token for user {UserId}", userId);
+            return Ok(new { message = "If that email exists, a password reset link has been sent." });
+        }
+
+        var url = _linkGenerator.GeneratePasswordResetLink(email, token, Request.Scheme, Request.Host.ToString());
+
+        try
+        {
+            await _email.SendAsync(email, "Reset your StorageConnector password",
+                $"Click to reset your password: <a href=\"{url}\">{url}</a><br><br>If you didn't request this, please ignore this email.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send password reset email to {Email}", email);
+        }
+
+        return Ok(new { message = "If that email exists, a password reset link has been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+    {
+        var (userId, _) = await _users.FindByEmailAsync(dto.Email);
+        if (userId is null)
+            return BadRequest(new { message = "Invalid reset token or email." });
+
+        var succeeded = await _users.ResetPasswordAsync(userId, dto.Token, dto.NewPassword);
+        if (!succeeded)
+            return BadRequest(new { message = "Invalid or expired reset token." });
+
+        return Ok(new { message = "Password reset successfully." });
     }
 }

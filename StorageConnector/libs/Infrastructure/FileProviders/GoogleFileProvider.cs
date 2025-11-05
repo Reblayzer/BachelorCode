@@ -44,7 +44,7 @@ public sealed class GoogleFileProvider : IFileProvider
 
     var requestUrl = $"{DriveApiBaseUrl}/files?" +
         $"q={Uri.EscapeDataString(query)}&" +
-        $"fields=nextPageToken,files(id,name,mimeType,modifiedTime)&" +
+        $"fields=nextPageToken,files(id,name,mimeType,size,modifiedTime)&" +
         $"pageSize={pageSize}&" +
         $"orderBy=modifiedTime desc";
 
@@ -71,6 +71,7 @@ public sealed class GoogleFileProvider : IFileProvider
         Id: f.Id,
         Name: f.Name,
         MimeType: f.MimeType,
+        SizeBytes: f.Size,
         ModifiedUtc: f.ModifiedTime
     )).ToList() ?? new List<FileItem>();
 

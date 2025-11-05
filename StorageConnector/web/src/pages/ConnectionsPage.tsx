@@ -119,26 +119,14 @@ export const ConnectionsPage = () => {
     <div className="mx-auto" style={{ maxWidth: '1600px' }}>
       <section className="space-y-8">
         <header className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Your connections</h1>
-          <p className="text-sm text-slate-600 mt-2">
-            Link your Google and Microsoft accounts. We will display the scopes
-            granted and let you revoke access at any time.
-          </p>
-        </div>
-        
-        {(connectionsByProvider.get("Google")?.isLinked || connectionsByProvider.get("Microsoft")?.isLinked) && (
-          <Link
-            to="/files"
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-            Browse My Files
-          </Link>
-        )}
-      </header>
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Your connections</h1>
+            <p className="text-sm text-slate-600 mt-2">
+              Link your Google and Microsoft accounts. We will display the scopes
+              granted and let you revoke access at any time.
+            </p>
+          </div>
+        </header>
 
       {(actionMessage || actionError) && (
         <div

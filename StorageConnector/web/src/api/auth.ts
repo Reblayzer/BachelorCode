@@ -35,3 +35,21 @@ export const getCurrentUser = () =>
   identityRequest<CurrentUserResponse>("/api/auth/me", {
     method: "GET",
   });
+
+export const changePassword = (payload: { currentPassword: string; newPassword: string }) =>
+  identityRequest<void>("/api/auth/change-password", {
+    method: "POST",
+    body: payload,
+  });
+
+export const requestPasswordReset = (payload: { email: string }) =>
+  identityRequest<void>("/api/auth/forgot-password", {
+    method: "POST",
+    body: payload,
+  });
+
+export const resetPassword = (payload: { email: string; token: string; newPassword: string }) =>
+  identityRequest<void>("/api/auth/reset-password", {
+    method: "POST",
+    body: payload,
+  });

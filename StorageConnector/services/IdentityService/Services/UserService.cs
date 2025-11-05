@@ -68,4 +68,27 @@ public sealed class UserService : IUserService
   }
 
   public Task SignOutAsync() => _signIn.SignOutAsync();
+
+  public async Task<bool> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
+  {
+    var user = await _users.FindByIdAsync(userId);
+    if (user is null) return false;
+    var result = await _users.ChangePasswordAsync(user, currentPassword, newPassword);
+    return result.Succeeded;
+  }
+
+  public async Task<string?> GeneratePasswordResetTokenAsync(string userId)
+  {
+    var user = await _users.FindByIdAsync(userId);
+    if (user is null) return null;
+    return await _users.GeneratePasswordResetTokenAsync(user);
+  }
+
+  public async Task<bool> ResetPasswordAsync(string userId, string token, string newPassword)
+  {
+    var user = await _users.FindByIdAsync(userId);
+    if (user is null) return false;
+    var result = await _users.ResetPasswordAsync(user, token, newPassword);
+    return result.Succeeded;
+  }
 }

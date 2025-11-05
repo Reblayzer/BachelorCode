@@ -46,12 +46,25 @@ export const TopNav = () => {
         </Link>
 
         <nav className="flex items-center gap-2">
-          <NavLink to="/connections" className={navLinkClass}>
-            Connections
-          </NavLink>
+          {isAuthenticated && (
+            <>
+              <NavLink to="/connections" className={navLinkClass}>
+                Connections
+              </NavLink>
+              <NavLink to="/files" className={navLinkClass}>
+                Files
+              </NavLink>
+            </>
+          )}
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <span className="text-sm text-slate-500">{userEmail}</span>
+              <NavLink 
+                to="/account" 
+                className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              >
+                Account
+              </NavLink>
               <button
                 type="button"
                 onClick={handleLogout}

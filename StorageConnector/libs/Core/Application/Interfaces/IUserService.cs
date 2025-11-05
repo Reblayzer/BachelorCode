@@ -12,4 +12,7 @@ public interface IUserService
   Task<bool> IsEmailConfirmedAsync(string userId);
   Task<bool> PasswordSignInAsync(string email, string password, bool isPersistent = true, bool lockoutOnFailure = true);
   Task SignOutAsync();
+  Task<bool> ChangePasswordAsync(string userId, string currentPassword, string newPassword);
+  Task<string?> GeneratePasswordResetTokenAsync(string userId);
+  Task<bool> ResetPasswordAsync(string userId, string token, string newPassword);
 }

@@ -9,6 +9,7 @@ public sealed record ProviderFileItem(
     string Id,
     string Name,
     string? MimeType,
+    long? SizeBytes,
     DateTimeOffset ModifiedUtc,
     ProviderType Provider
 );

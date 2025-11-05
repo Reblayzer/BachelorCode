@@ -49,17 +49,10 @@ builder.Services.AddCors(options =>
 // Email
 builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection("Email:SendGrid"));
 
-// Register a no-op sender in Development to avoid failing sends when SendGrid isn't configured.
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddScoped<IEmailSender, NoOpEmailSender>();
-}
-else
-{
-    builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
-}
+// Always use SendGrid for sending emails
+builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
 
-// Validate SendGrid options so misconfiguration fails fast in non-dev environments
+// Validate SendGrid options
 builder.Services.AddOptions<Infrastructure.Email.SendGridOptions>()
     .Bind(builder.Configuration.GetSection("Email:SendGrid"))
     .Validate(o => !string.IsNullOrWhiteSpace(o.ApiKey) && !string.IsNullOrWhiteSpace(o.FromEmail), "SendGrid ApiKey and FromEmail must be configured");

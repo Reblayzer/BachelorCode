@@ -51,6 +51,7 @@ public sealed class FileService : IFileService
                 Id: item.Id,
                 Name: item.Name,
                 MimeType: item.MimeType,
+                SizeBytes: item.SizeBytes,
                 ModifiedUtc: item.ModifiedUtc,
                 Provider: account.Provider
             ));

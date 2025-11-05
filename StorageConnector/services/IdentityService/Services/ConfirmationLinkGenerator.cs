@@ -31,5 +31,17 @@ namespace IdentityService.Services
       var uri = _linkGenerator.GetUriByAction(action: "ConfirmEmail", controller: "Auth", values: new { userId, token }, scheme: scheme, host: new HostString(host));
       return uri ?? string.Empty;
     }
+
+    public string GeneratePasswordResetLink(string email, string token, string scheme, string host)
+    {
+      if (string.IsNullOrEmpty(token)) return string.Empty;
+
+      // Build a URL that points to the frontend reset password page
+      var encodedToken = Uri.EscapeDataString(token);
+      var encodedEmail = Uri.EscapeDataString(email);
+
+      // Always point to the frontend URL for password reset (development)
+      return $"http://localhost:5173/reset-password?token={encodedToken}&email={encodedEmail}";
+    }
   }
 }

@@ -66,6 +66,7 @@ public sealed class MicrosoftFileProvider : IFileProvider
         Id: item.Id,
         Name: item.Name,
         MimeType: item.File?.MimeType, // null for folders
+        SizeBytes: item.Size,
         ModifiedUtc: item.LastModifiedDateTime
     )).ToList() ?? new List<FileItem>();
 
