@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "concurrently --kill-others-on-fail \"npm:dev:frontend\" \"npm:dev:identity\" \"npm:dev:linking\"",
     "dev:frontend": "vite",
-    "dev:identity": "cd ../services/IdentityService && dotnet run --launch-profile https",
-    "dev:linking": "cd ../services/LinkingService && dotnet run --launch-profile https",
+    "dev:identity": "cd ../services/IdentityService/Api && dotnet run --launch-profile https",
+    "dev:linking": "cd ../services/LinkingService/Api && dotnet run --launch-profile https",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",

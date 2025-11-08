@@ -84,6 +84,21 @@ public sealed class FilesController : ControllerBase
 
     return Redirect(viewUrl.ToString());
   }
+
+  /// <summary>
+  /// Get the web view URL for a file as JSON (for frontend to open in new tab).
+  /// </summary>
+  [HttpGet("{provider}/{fileId}/view-url")]
+  public async Task<ActionResult<FileViewUrlResponse>> GetFileViewUrlJson(
+      ProviderType provider,
+      string fileId)
+  {
+    var userId = User.RequireUserId();
+
+    var viewUrl = await _fileService.GetFileViewUrlAsync(userId, provider, fileId);
+
+    return Ok(new FileViewUrlResponse(viewUrl.ToString()));
+  }
 }
 
 /// <summary>
@@ -95,3 +110,9 @@ public sealed record FileListResponse(
     IReadOnlyList<FileItem> Items,
     string? NextPageToken
 );
+
+/// <summary>
+/// Response DTO for file view URL.
+/// </summary>
+/// <param name="Url">The URL to view the file in the provider's web interface.</param>
+public sealed record FileViewUrlResponse(string Url);

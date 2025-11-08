@@ -89,9 +89,9 @@ async function request<TResponse>(
     // Handle 401 Unauthorized - clear token and redirect to login
     if (response.status === 401) {
       localStorage.removeItem("auth_token");
-      // Optionally redirect to login page
-      if (window.location.pathname !== "/auth/login") {
-        window.location.href = "/auth/login";
+      // Redirect to login page only if not already on login page
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
       }
     }
 

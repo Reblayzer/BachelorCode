@@ -26,3 +26,16 @@ export async function getFiles(): Promise<ProviderFileItem[]> {
 export async function getFileMetadata(provider: ProviderType, fileId: string): Promise<FileMetadata> {
   return await linkingRequest<FileMetadata>(`/api/files/${provider}/${fileId}/metadata`);
 }
+
+/**
+ * Opens a file in the provider's web interface (Google Drive or OneDrive).
+ * This function fetches the view URL from the backend and opens it in a new tab.
+ */
+export async function openFileInProvider(provider: ProviderType, fileId: string): Promise<void> {
+  // Call the backend endpoint that returns the view URL as JSON
+  const response = await linkingRequest<{ url: string }>(`/api/files/${provider}/${fileId}/view-url`);
+
+  // Open the URL in a new tab
+  window.open(response.url, "_blank");
+}
+

@@ -2,7 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useState, useMemo } from "react";
 import DataTable, { type TableColumn } from "react-data-table-component";
-import { getFiles, type ProviderFileItem } from "../api/files";
+import {
+  getFiles,
+  openFileInProvider,
+  type ProviderFileItem,
+} from "../api/files";
 import { PROVIDER_META } from "../constants/providers";
 import type { ProviderType } from "../api/types";
 import {
@@ -188,9 +192,14 @@ export const FilesPage = () => {
       minWidth: "200px",
       cell: (row) => (
         <button
-          onClick={() =>
-            window.open(`/api/files/${row.provider}/${row.id}/view`, "_blank")
-          }
+          onClick={async () => {
+            try {
+              await openFileInProvider(row.provider as ProviderType, row.id);
+            } catch (error) {
+              console.error("Failed to open file:", error);
+              alert("Failed to open file. Please try again.");
+            }
+          }}
           className="text-blue-600 hover:text-blue-900 inline-flex items-center text-sm font-medium whitespace-nowrap"
           title="Open in Provider"
         >
