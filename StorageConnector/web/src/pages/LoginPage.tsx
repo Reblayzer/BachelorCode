@@ -26,7 +26,7 @@ export const LoginPage = () => {
       if (error instanceof ApiError) {
         if (error.status === 403) {
           setErrorMessage(
-            "Please confirm your email address before signing in.",
+            "Please confirm your email address before signing in."
           );
           clear();
           return;
@@ -93,8 +93,8 @@ export const LoginPage = () => {
             >
               Password
             </label>
-            <Link 
-              to="/forgot-password" 
+            <Link
+              to="/forgot-password"
               className="text-xs font-medium text-brand hover:text-brand-dark"
             >
               Forgot password?

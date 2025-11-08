@@ -10,13 +10,13 @@ type ProviderMeta = {
 export const PROVIDER_META: Record<ProviderType, ProviderMeta> = {
   Google: {
     name: "Google Drive",
-    description: "Connect drive data with read-only access.",
+    description: "Connect drive data with read-write access.",
     accent: "from-[#4285F4] to-[#0F9D58]",
     color: "#4285F4",
   },
   Microsoft: {
     name: "Microsoft OneDrive",
-    description: "Read file metadata from your OneDrive tenant.",
+    description: "Connect drive data with read-write access.",
     accent: "from-[#0A66C2] to-[#7FBA00]",
     color: "#0A66C2",
   },

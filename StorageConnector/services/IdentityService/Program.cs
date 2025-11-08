@@ -20,6 +20,21 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+// Configure cookie authentication with 1-hour sliding expiration
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.ExpireTimeSpan = TimeSpan.FromHours(1);
+    options.SlidingExpiration = true; // Cookie refreshes if user is active
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+});
+
 builder.Services.AddScoped<Application.Interfaces.IUserService, IdentityService.Services.UserService>();
 builder.Services.AddScoped<Application.Interfaces.IConfirmationLinkGenerator, IdentityService.Services.ConfirmationLinkGenerator>();
 
