@@ -30,6 +30,11 @@ const defaultHeaders = {
   Accept: "application/json",
 };
 
+// Get token from localStorage
+const getAuthToken = (): string | null => {
+  return localStorage.getItem("auth_token");
+};
+
 const resolveUrl = (base: string | undefined, path: string) =>
   base ? `${base}${path}` : path;
 
@@ -44,6 +49,12 @@ async function request<TResponse>(
     ...defaultHeaders,
     ...(init.headers ?? {}),
   };
+
+  // Add Authorization header if token exists
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
   let body: BodyInit | undefined;
 
@@ -75,6 +86,15 @@ async function request<TResponse>(
   }
 
   if (!response.ok) {
+    // Handle 401 Unauthorized - clear token and redirect to login
+    if (response.status === 401) {
+      localStorage.removeItem("auth_token");
+      // Optionally redirect to login page
+      if (window.location.pathname !== "/auth/login") {
+        window.location.href = "/auth/login";
+      }
+    }
+
     const message =
       (typeof payload === "object" &&
         payload !== null &&

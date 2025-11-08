@@ -7,9 +7,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const probe = async () => {
       try {
+        // If we have a token, verify it by fetching current user
+        const token = useAuthStore.getState().getToken();
+        if (!token) {
+          useAuthStore.getState().clear();
+          return;
+        }
+
         const response = await getCurrentUser();
         if (response?.email) {
-          useAuthStore.getState().setAuthenticated(response.email);
+          // Update email but keep existing token
+          useAuthStore.getState().setAuthenticated(response.email, token);
         }
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {

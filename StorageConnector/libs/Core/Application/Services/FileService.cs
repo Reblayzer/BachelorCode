@@ -22,7 +22,7 @@ public sealed class FileService : IFileService
   }
 
   public async Task<IReadOnlyList<ProviderFileItem>> GetFilesFromAllProvidersAsync(
-      string userId, int pageSize = 50)
+      Guid userId, int pageSize = 50)
   {
     // Get all linked accounts for the user
     var linkedAccounts = await _tokenStore.GetAllByUserAsync(userId);
@@ -44,7 +44,7 @@ public sealed class FileService : IFileService
           return Enumerable.Empty<ProviderFileItem>();
         }
 
-        var (items, _) = await provider.ListAsync(userId, folderId: null, pageSize, pageToken: null);
+        var (items, _) = await provider.ListAsync(userId.ToString(), folderId: null, pageSize, pageToken: null);
 
         // Map to ProviderFileItem to include provider info
         return items.Select(item => new ProviderFileItem(
@@ -80,22 +80,22 @@ public sealed class FileService : IFileService
   }
 
   public async Task<(IReadOnlyList<FileItem> items, string? nextPageToken)> GetFilesByProviderAsync(
-      string userId, ProviderType provider, string? folderId = null,
+      Guid userId, ProviderType provider, string? folderId = null,
       int pageSize = 50, string? pageToken = null)
   {
     var fileProvider = _fileProviderFactory.Get(provider);
-    return await fileProvider.ListAsync(userId, folderId, pageSize, pageToken);
+    return await fileProvider.ListAsync(userId.ToString(), folderId, pageSize, pageToken);
   }
 
-  public async Task<FileMetadata> GetFileMetadataAsync(string userId, ProviderType provider, string fileId)
+  public async Task<FileMetadata> GetFileMetadataAsync(Guid userId, ProviderType provider, string fileId)
   {
     var fileProvider = _fileProviderFactory.Get(provider);
-    return await fileProvider.GetMetadataAsync(userId, fileId);
+    return await fileProvider.GetMetadataAsync(userId.ToString(), fileId);
   }
 
-  public async Task<Uri> GetFileViewUrlAsync(string userId, ProviderType provider, string fileId)
+  public async Task<Uri> GetFileViewUrlAsync(Guid userId, ProviderType provider, string fileId)
   {
     var fileProvider = _fileProviderFactory.Get(provider);
-    return await fileProvider.GetViewUrlAsync(userId, fileId);
+    return await fileProvider.GetViewUrlAsync(userId.ToString(), fileId);
   }
 }

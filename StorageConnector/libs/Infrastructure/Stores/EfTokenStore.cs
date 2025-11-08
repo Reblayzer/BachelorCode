@@ -4,19 +4,18 @@ using Microsoft.Extensions.Caching.Memory;
 using Application;
 using Application.Interfaces;
 using Domain;
-using Infrastructure.Data;
 
 namespace Infrastructure;
 
 public sealed class EfTokenStore : ITokenStore
 {
-    private readonly AppDbContext _db; private readonly IDataProtector _p;
-    public EfTokenStore(AppDbContext db, IDataProtectionProvider dp) { _db = db; _p = dp.CreateProtector("tokens.v1"); }
+    private readonly DbContext _db; private readonly IDataProtector _p;
+    public EfTokenStore(DbContext db, IDataProtectionProvider dp) { _db = db; _p = dp.CreateProtector("tokens.v1"); }
 
-    public Task<ProviderAccount?> GetAsync(string userId, ProviderType provider) =>
+    public Task<ProviderAccount?> GetAsync(Guid userId, ProviderType provider) =>
         _db.Set<ProviderAccount>().FirstOrDefaultAsync(x => x.UserId == userId && x.Provider == provider)!;
 
-    public async Task<IReadOnlyList<ProviderAccount>> GetAllByUserAsync(string userId) =>
+    public async Task<IReadOnlyList<ProviderAccount>> GetAllByUserAsync(Guid userId) =>
         await _db.Set<ProviderAccount>().Where(x => x.UserId == userId).ToListAsync();
 
     public async Task UpsertAsync(ProviderAccount account)
@@ -41,7 +40,7 @@ public sealed class EfTokenStore : ITokenStore
 
         await _db.SaveChangesAsync();
     }
-    public async Task DeleteAsync(string userId, ProviderType provider)
+    public async Task DeleteAsync(Guid userId, ProviderType provider)
     {
         var a = await GetAsync(userId, provider); if (a != null) { _db.Remove(a); await _db.SaveChangesAsync(); }
     }

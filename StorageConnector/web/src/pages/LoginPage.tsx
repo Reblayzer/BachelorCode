@@ -16,8 +16,9 @@ export const LoginPage = () => {
 
   const loginMutation = useMutation({
     mutationFn: login,
-    onSuccess: () => {
-      setAuthenticated(email);
+    onSuccess: (data) => {
+      // Store token and email in auth store
+      setAuthenticated(email, data.token);
       queryClient.invalidateQueries({ queryKey: ["connections"] });
       setErrorMessage(null);
       navigate("/connections");

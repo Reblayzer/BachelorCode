@@ -56,7 +56,7 @@ describe("LoginPage", () => {
 
   it("handles successful login", async () => {
     const user = userEvent.setup();
-    vi.mocked(authApi.login).mockResolvedValueOnce(undefined);
+    vi.mocked(authApi.login).mockResolvedValueOnce({ token: "fake-jwt-token" });
 
     render(<LoginPage />);
 

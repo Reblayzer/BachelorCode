@@ -1,45 +1,49 @@
-using System.IO;
-using Microsoft.AspNetCore.DataProtection;
+using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
-using System.Linq;
-using Application;
-using Microsoft.Extensions.DependencyInjection;
-using Application.Interfaces;
+using LinkingService.Data;
 using LinkingService.Extensions;
-using Domain;
-using Infrastructure;
-using Infrastructure.Config;
-using Infrastructure.Data;
-using Infrastructure.Email;
-using Infrastructure.FileProviders;
-using Infrastructure.OAuth;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<AppDbContext>(options =>
+// Database - separate database for LinkingService
+builder.Services.AddDbContext<LinkingDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
+// Register LinkingDbContext as DbContext for dependency injection
+builder.Services.AddScoped<DbContext>(provider => provider.GetRequiredService<LinkingDbContext>());
+
+// JWT Configuration - validate tokens from IdentityService
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]!;
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]!;
+var jwtAudience = builder.Configuration["Jwt:Audience"]!;
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        opts.SignIn.RequireConfirmedEmail = true;
-        opts.User.RequireUniqueEmail = true;
-    })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 builder.Services.AddAuthorization();
 builder.Services.AddMemoryCache();
 
-var keysPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "data", "dp-keys"));
-Directory.CreateDirectory(keysPath);
-
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-    .SetApplicationName("StorageConnector");
-
+// CORS
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? new[] { "https://localhost:5173" };
@@ -53,8 +57,7 @@ builder.Services.AddCors(options =>
             .AllowCredentials());
 });
 
-// Register linking service infrastructure (IoC wiring) from a shared extension so tests
-// and Program can use the same registrations.
+// Register linking service infrastructure
 builder.Services.AddLinkingServiceInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers()
@@ -71,10 +74,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-// Map domain exceptions to friendly HTTP responses for the SPA.
 app.UseMiddleware<LinkingService.Middleware.ExceptionMappingMiddleware>();
-
 app.UseCors("Spa");
 app.UseAuthentication();
 app.UseAuthorization();

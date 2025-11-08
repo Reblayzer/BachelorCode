@@ -4,6 +4,7 @@ import {
 import type {
   CurrentUserResponse,
   LoginRequest,
+  LoginResponse,
   RegisterRequest,
   RegisterResponse,
 } from "./types";
@@ -15,7 +16,7 @@ export const register = (payload: RegisterRequest) =>
   });
 
 export const login = (payload: LoginRequest) =>
-  identityRequest<void>("/api/auth/login", {
+  identityRequest<LoginResponse>("/api/auth/login", {
     method: "POST",
     body: payload,
   });

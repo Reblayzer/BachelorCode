@@ -41,11 +41,11 @@ public sealed class ConnectController : ControllerBase
     }
 
     [HttpGet("{provider}/callback")]
+    [AllowAnonymous]
     public async Task<IActionResult> Callback([FromRoute] ProviderType provider, [FromQuery] string state, [FromQuery] string code)
     {
-        var userId = User.RequireUserId();
         var redirect = new Uri($"{Request.Scheme}://{Request.Host}/api/connect/{provider}/callback");
-        await _service.ConnectCallbackAsync(userId, state, code, redirect);
+        await _service.ConnectCallbackAsync(state, code, redirect);
         return Redirect($"{_frontendBaseUrl}/connections/success?provider={provider}");
     }
 

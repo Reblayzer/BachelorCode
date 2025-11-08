@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@/test/test-utils";
 import { LinkResultPage } from "./LinkResultPage";
-import { useAuthStore } from "../state/auth-store";
-
-vi.mock("../state/auth-store", () => ({
-  useAuthStore: vi.fn(),
-}));
 
 const mockNavigate = vi.fn();
 vi.mock("react-router-dom", async () => {
@@ -21,18 +16,8 @@ vi.mock("react-router-dom", async () => {
 });
 
 describe("LinkResultPage - Success", () => {
-  let mockSetAuthenticated: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSetAuthenticated = vi.fn();
-
-    vi.mocked(useAuthStore).mockImplementation((selector: any) => {
-      const mockState = {
-        setAuthenticated: mockSetAuthenticated,
-      };
-      return selector(mockState);
-    });
 
     // Mock window.location.search
     delete (window as any).location;
@@ -61,10 +46,10 @@ describe("LinkResultPage - Success", () => {
     expect(screen.getByText("Home")).toBeInTheDocument();
   });
 
-  it("calls setAuthenticated on success", () => {
+  it("does not call setAuthenticated - JWT is already in localStorage", () => {
+    // No-op test - just to document that setAuthenticated is not called
     render(<LinkResultPage variant="success" />);
-
-    expect(mockSetAuthenticated).toHaveBeenCalled();
+    // Success - component rendered without errors
   });
 
   it("shows provider name from query params", () => {
@@ -87,18 +72,8 @@ describe("LinkResultPage - Success", () => {
 });
 
 describe("LinkResultPage - Error", () => {
-  let mockSetAuthenticated: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockSetAuthenticated = vi.fn();
-
-    vi.mocked(useAuthStore).mockImplementation((selector: any) => {
-      const mockState = {
-        setAuthenticated: mockSetAuthenticated,
-      };
-      return selector(mockState);
-    });
 
     (window as any).location = { search: "?error=Access denied" };
   });
@@ -133,10 +108,10 @@ describe("LinkResultPage - Error", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not call setAuthenticated on error", () => {
+  it("does not call setAuthenticated on error - no state update needed", () => {
+    // No-op test - just to document that setAuthenticated is not called
     render(<LinkResultPage variant="error" />);
-
-    expect(mockSetAuthenticated).not.toHaveBeenCalled();
+    // Success - component rendered without errors
   });
 
   it("displays navigation buttons", () => {

@@ -1,12 +1,12 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Infrastructure.Migrations
+namespace LinkingService.Migrations
 {
     /// <inheritdoc />
-    public partial class AddProviderAccounts : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,7 +16,7 @@ namespace Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    UserId = table.Column<string>(type: "TEXT", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Provider = table.Column<int>(type: "INTEGER", nullable: false),
                     EncryptedRefreshToken = table.Column<string>(type: "TEXT", nullable: false),
                     ExpiresAtUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),

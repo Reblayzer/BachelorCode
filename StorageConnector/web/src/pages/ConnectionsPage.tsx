@@ -17,9 +17,7 @@ import {
 
 export const ConnectionsPage = () => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
   const clear = useAuthStore((state) => state.clear);
-  const userEmail = useAuthStore((state) => state.userEmail);
   const queryClient = useQueryClient();
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -30,11 +28,8 @@ export const ConnectionsPage = () => {
     retry: false,
   });
 
-  useEffect(() => {
-    if (connectionsQuery.isSuccess) {
-      setAuthenticated(userEmail);
-    }
-  }, [connectionsQuery.isSuccess, setAuthenticated, userEmail]);
+  // No need to call setAuthenticated here - token is already in localStorage
+  // and will be used automatically for all requests
 
   useEffect(() => {
     if (

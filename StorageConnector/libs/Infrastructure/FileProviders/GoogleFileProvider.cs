@@ -144,7 +144,12 @@ public sealed class GoogleFileProvider : IFileProvider
 
   private async Task<string> GetAccessTokenAsync(string userId)
   {
-    var account = await _tokenStore.GetAsync(userId, ProviderType.Google);
+    if (!Guid.TryParse(userId, out var userGuid))
+    {
+      throw new InvalidOperationException($"Invalid user ID format: {userId}");
+    }
+
+    var account = await _tokenStore.GetAsync(userGuid, ProviderType.Google);
     if (account is null)
     {
       throw new InvalidOperationException($"No Google account linked for user {userId}");

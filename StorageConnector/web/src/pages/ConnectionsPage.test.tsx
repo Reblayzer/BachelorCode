@@ -256,12 +256,15 @@ describe("ConnectionsPage", () => {
     });
   });
 
-  it("sets authenticated on successful query", async () => {
+  it("renders successfully without calling setAuthenticated", async () => {
     render(<ConnectionsPage />);
 
     await waitFor(() => {
-      expect(mockSetAuthenticated).toHaveBeenCalledWith("test@example.com");
+      expect(getConnections).toHaveBeenCalled();
     });
+
+    // setAuthenticated should NOT be called - JWT token is in localStorage
+    expect(mockSetAuthenticated).not.toHaveBeenCalled();
   });
 
   it("handles generic start link error", async () => {

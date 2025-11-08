@@ -1,53 +1,52 @@
-using System.IO;
-using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Infrastructure.Data;
+using System.Text;
+using IdentityService.Configuration;
+using IdentityService.Data;
+using IdentityService.Services;
 using Infrastructure.Email;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
-builder.Services.AddDbContext<AppDbContext>(options =>
+// Database - separate database for IdentityService
+builder.Services.AddDbContext<IdentityDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
 
-// Identity
-builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
-    {
-        opts.SignIn.RequireConfirmedEmail = true;
-        opts.User.RequireUniqueEmail = true;
-    })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
+// JWT Configuration
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()!;
 
-// Configure cookie authentication with 1-hour sliding expiration
-builder.Services.ConfigureApplicationCookie(options =>
+builder.Services.AddAuthentication(options =>
 {
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.ExpireTimeSpan = TimeSpan.FromHours(1);
-    options.SlidingExpiration = true; // Cookie refreshes if user is active
-    options.Events.OnRedirectToLogin = context =>
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return Task.CompletedTask;
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtSettings.Audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
     };
 });
 
-builder.Services.AddScoped<Application.Interfaces.IUserService, IdentityService.Services.UserService>();
-builder.Services.AddScoped<Application.Interfaces.IConfirmationLinkGenerator, IdentityService.Services.ConfirmationLinkGenerator>();
+builder.Services.AddAuthorization();
 
-// Make LinkGenerator's IHttpContextAccessor available to the ConfirmationLinkGenerator
+// Services
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
+builder.Services.AddScoped<Application.Interfaces.IConfirmationLinkGenerator, IdentityService.Services.ConfirmationLinkGenerator>();
 builder.Services.AddHttpContextAccessor();
 
-var keysPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "data", "dp-keys"));
-Directory.CreateDirectory(keysPath);
-
-builder.Services.AddDataProtection()
-    .PersistKeysToFileSystem(new DirectoryInfo(keysPath))
-    .SetApplicationName("StorageConnector");
-
+// CORS
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>() ?? new[] { "https://localhost:5173" };
@@ -63,14 +62,12 @@ builder.Services.AddCors(options =>
 
 // Email
 builder.Services.Configure<SendGridOptions>(builder.Configuration.GetSection("Email:SendGrid"));
-
-// Always use SendGrid for sending emails
 builder.Services.AddScoped<IEmailSender, SendGridEmailSender>();
 
-// Validate SendGrid options
-builder.Services.AddOptions<Infrastructure.Email.SendGridOptions>()
+builder.Services.AddOptions<SendGridOptions>()
     .Bind(builder.Configuration.GetSection("Email:SendGrid"))
-    .Validate(o => !string.IsNullOrWhiteSpace(o.ApiKey) && !string.IsNullOrWhiteSpace(o.FromEmail), "SendGrid ApiKey and FromEmail must be configured");
+    .Validate(o => !string.IsNullOrWhiteSpace(o.ApiKey) && !string.IsNullOrWhiteSpace(o.FromEmail),
+        "SendGrid ApiKey and FromEmail must be configured");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -85,7 +82,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-// Map domain exceptions to friendly HTTP responses
 app.UseMiddleware<IdentityService.Middleware.ExceptionMappingMiddleware>();
 app.UseCors("Spa");
 app.UseAuthentication();

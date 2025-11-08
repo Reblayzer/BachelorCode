@@ -2,7 +2,8 @@ using Domain;
 
 namespace Application;
 
-public interface IStateStore {
-    Task SaveAsync(string state, string codeVerifier, ProviderType provider, TimeSpan ttl);
-    Task<(string codeVerifier, ProviderType provider)?> TakeAsync(string state);
+public interface IStateStore
+{
+    Task SaveAsync(string state, Guid userId, string codeVerifier, ProviderType provider, TimeSpan ttl);
+    Task<(Guid userId, string codeVerifier, ProviderType provider)?> TakeAsync(string state);
 }

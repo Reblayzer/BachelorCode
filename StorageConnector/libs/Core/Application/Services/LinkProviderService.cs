@@ -29,21 +29,21 @@ public sealed class LinkProviderService
         return Convert.ToBase64String(hash).Replace("+", "-").Replace("/", "_").TrimEnd('=');
     }
 
-    public async Task<Uri> StartAsync(string userId, ProviderType provider, Uri redirectUri, string[] scopes)
+    public async Task<Uri> StartAsync(Guid userId, ProviderType provider, Uri redirectUri, string[] scopes)
     {
         var state = Base64Url(24);
         var verifier = Base64Url(32);
         var challenge = CodeChallenge(verifier);
-        await _states.SaveAsync(state, verifier, provider, TimeSpan.FromMinutes(10));
+        await _states.SaveAsync(state, userId, verifier, provider, TimeSpan.FromMinutes(10));
         return new Uri(C(provider).BuildAuthorizeUrl(state, challenge, redirectUri, scopes));
     }
 
-    public async Task ConnectCallbackAsync(string userId, string state, string code, Uri redirectUri)
+    public async Task ConnectCallbackAsync(string state, string code, Uri redirectUri)
     {
         var result = await _states.TakeAsync(state);
         if (result is null)
             throw new InvalidOperationException("State expired");
-        var (codeVerifier, provider) = result.Value;
+        var (userId, codeVerifier, provider) = result.Value;
         var tokens = await C(provider).ExchangeCodeAsync(code, codeVerifier, redirectUri);
         var acc = await _tokens.GetAsync(userId, provider) ?? new ProviderAccount { UserId = userId, Provider = provider };
         acc.UpdateFrom(tokens, _tokens.Encrypt);

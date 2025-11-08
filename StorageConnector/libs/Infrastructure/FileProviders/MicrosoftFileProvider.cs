@@ -138,7 +138,12 @@ public sealed class MicrosoftFileProvider : IFileProvider
 
   private async Task<string> GetAccessTokenAsync(string userId)
   {
-    var account = await _tokenStore.GetAsync(userId, ProviderType.Microsoft);
+    if (!Guid.TryParse(userId, out var userGuid))
+    {
+      throw new InvalidOperationException($"Invalid user ID format: {userId}");
+    }
+
+    var account = await _tokenStore.GetAsync(userGuid, ProviderType.Microsoft);
     if (account is null)
     {
       throw new InvalidOperationException($"No Microsoft account linked for user {userId}");

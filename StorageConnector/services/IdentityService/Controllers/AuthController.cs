@@ -1,11 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Contracts.Auth;
-using Microsoft.AspNetCore.Http;
-using Infrastructure.Data;
 using Infrastructure.Email;
+using IdentityService.Services;
 using Application.Interfaces;
 
 namespace IdentityService.Controllers;
@@ -14,14 +12,21 @@ namespace IdentityService.Controllers;
 [Route("api/auth")]
 public sealed class AuthController : ControllerBase
 {
-    private readonly IUserService _users;
+    private readonly UserService _users;
+    private readonly IJwtService _jwtService;
     private readonly IEmailSender _email;
-    private readonly Application.Interfaces.IConfirmationLinkGenerator _linkGenerator;
-    private readonly Microsoft.Extensions.Logging.ILogger<AuthController> _logger;
+    private readonly IConfirmationLinkGenerator _linkGenerator;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IUserService users, IEmailSender email, Application.Interfaces.IConfirmationLinkGenerator linkGenerator, Microsoft.Extensions.Logging.ILogger<AuthController> logger)
+    public AuthController(
+        UserService users,
+        IJwtService jwtService,
+        IEmailSender email,
+        IConfirmationLinkGenerator linkGenerator,
+        ILogger<AuthController> logger)
     {
         _users = users;
+        _jwtService = jwtService;
         _email = email;
         _linkGenerator = linkGenerator;
         _logger = logger;
@@ -33,14 +38,15 @@ public sealed class AuthController : ControllerBase
         var (succeeded, errors, userId) = await _users.CreateAsync(dto.Email, dto.Password);
         if (!succeeded) return BadRequest(errors);
 
-        var token = await _users.GenerateEmailConfirmationTokenAsync(userId!);
+        var token = await _users.GenerateEmailConfirmationTokenAsync(userId!.Value);
         if (string.IsNullOrEmpty(token))
         {
-            // Token generation failed unexpectedly — surface an error to the caller.
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to generate email confirmation token." });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = "Failed to generate email confirmation token." });
         }
 
-        var url = _linkGenerator.GenerateEmailConfirmationLink(userId!, token, Request.Scheme, Request.Host.ToString());
+        var url = _linkGenerator.GenerateEmailConfirmationLink(
+            userId!.Value.ToString(), token, Request.Scheme, Request.Host.ToString());
 
         try
         {
@@ -50,7 +56,8 @@ public sealed class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send confirmation email to {Email}", dto.Email);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to send confirmation email." });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = "Failed to send confirmation email." });
         }
 
         return Accepted(new { message = "Registration successful. Check your email to confirm." });
@@ -59,13 +66,15 @@ public sealed class AuthController : ControllerBase
     [HttpGet("confirm-email")]
     public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
     {
-        var (id, _) = await _users.FindByIdAsync(userId);
+        if (!Guid.TryParse(userId, out var userGuid))
+            return BadRequest();
+
+        var (id, _) = await _users.FindByIdAsync(userGuid);
         if (id is null) return NotFound();
 
-        var ok = await _users.ConfirmEmailAsync(userId, token);
+        var ok = await _users.ConfirmEmailAsync(userGuid, token);
         if (!ok) return BadRequest();
 
-        // Redirect to the frontend confirmation page
         return Redirect("http://localhost:5173/auth/confirmed");
     }
 
@@ -75,13 +84,15 @@ public sealed class AuthController : ControllerBase
         var (userId, email) = await _users.FindByEmailAsync(dto.Email);
         if (userId is null) return Ok();
 
-        var token = await _users.GenerateEmailConfirmationTokenAsync(userId!);
+        var token = await _users.GenerateEmailConfirmationTokenAsync(userId.Value);
         if (string.IsNullOrEmpty(token))
         {
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to generate email confirmation token." });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = "Failed to generate email confirmation token." });
         }
 
-        var url = _linkGenerator.GenerateEmailConfirmationLink(userId!, token, Request.Scheme, Request.Host.ToString());
+        var url = _linkGenerator.GenerateEmailConfirmationLink(
+            userId.Value.ToString(), token, Request.Scheme, Request.Host.ToString());
 
         try
         {
@@ -91,7 +102,8 @@ public sealed class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to resend confirmation email to {Email}", email);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Failed to send confirmation email." });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = "Failed to send confirmation email." });
         }
 
         return Accepted(new { message = "Confirmation email sent." });
@@ -103,18 +115,22 @@ public sealed class AuthController : ControllerBase
         var (userId, _) = await _users.FindByEmailAsync(dto.Email);
         if (userId is null) return Unauthorized();
 
-        if (!await _users.IsEmailConfirmedAsync(userId))
+        if (!await _users.IsEmailConfirmedAsync(userId.Value))
             return Forbid();
 
-        var ok = await _users.PasswordSignInAsync(dto.Email, dto.Password, true, true);
-        return ok ? Ok() : Unauthorized();
+        var user = await _users.ValidateCredentialsAsync(dto.Email, dto.Password);
+        if (user == null) return Unauthorized();
+
+        var token = _jwtService.GenerateToken(user);
+
+        return Ok(new { token, email = user.Email });
     }
 
     [Authorize]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public IActionResult Logout()
     {
-        await _users.SignOutAsync();
+        // With JWT, logout is handled client-side by removing the token
         return NoContent();
     }
 
@@ -122,9 +138,10 @@ public sealed class AuthController : ControllerBase
     [HttpGet("me")]
     public async Task<IActionResult> Me()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId is null)
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
             return Unauthorized();
+
         var (id, email) = await _users.FindByIdAsync(userId);
         if (id is null)
             return Unauthorized();
@@ -136,8 +153,8 @@ public sealed class AuthController : ControllerBase
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId is null)
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdClaim is null || !Guid.TryParse(userIdClaim, out var userId))
             return Unauthorized();
 
         var succeeded = await _users.ChangePasswordAsync(userId, dto.CurrentPassword, dto.NewPassword);
@@ -151,11 +168,10 @@ public sealed class AuthController : ControllerBase
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
     {
         var (userId, email) = await _users.FindByEmailAsync(dto.Email);
-        // Always return OK to prevent email enumeration
         if (userId is null || email is null)
             return Ok(new { message = "If that email exists, a password reset link has been sent." });
 
-        var token = await _users.GeneratePasswordResetTokenAsync(userId);
+        var token = await _users.GeneratePasswordResetTokenAsync(userId.Value);
         if (string.IsNullOrEmpty(token))
         {
             _logger.LogError("Failed to generate password reset token for user {UserId}", userId);
@@ -184,7 +200,7 @@ public sealed class AuthController : ControllerBase
         if (userId is null)
             return BadRequest(new { message = "Invalid reset token or email." });
 
-        var succeeded = await _users.ResetPasswordAsync(userId, dto.Token, dto.NewPassword);
+        var succeeded = await _users.ResetPasswordAsync(userId.Value, dto.Token, dto.NewPassword);
         if (!succeeded)
             return BadRequest(new { message = "Invalid or expired reset token." });
 

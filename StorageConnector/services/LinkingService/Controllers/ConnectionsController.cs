@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Contracts.Connections;
 using LinkingService.Extensions;
-using Infrastructure.Data;
+using LinkingService.Data;
 
 namespace LinkingService.Controllers;
 
@@ -12,9 +12,9 @@ namespace LinkingService.Controllers;
 [Authorize]
 public sealed class ConnectionsController : ControllerBase
 {
-    private readonly AppDbContext _db;
+    private readonly LinkingDbContext _db;
 
-    public ConnectionsController(AppDbContext db) => _db = db;
+    public ConnectionsController(LinkingDbContext db) => _db = db;
 
     [HttpGet("status")]
     public async Task<ActionResult<IReadOnlyList<ConnectionStatusResponse>>> Status()

@@ -16,7 +16,7 @@ public interface IFileService
   /// <param name="pageSize">Number of items per provider (default 50)</param>
   /// <returns>List of files with provider information</returns>
   Task<IReadOnlyList<ProviderFileItem>> GetFilesFromAllProvidersAsync(
-      string userId, int pageSize = 50);
+      Guid userId, int pageSize = 50);
 
   /// <summary>
   /// Get files from a specific provider.
@@ -28,7 +28,7 @@ public interface IFileService
   /// <param name="pageToken">Pagination token from previous request</param>
   /// <returns>List of files and next page token</returns>
   Task<(IReadOnlyList<FileItem> items, string? nextPageToken)> GetFilesByProviderAsync(
-      string userId, ProviderType provider, string? folderId = null,
+      Guid userId, ProviderType provider, string? folderId = null,
       int pageSize = 50, string? pageToken = null);
 
   /// <summary>
@@ -38,7 +38,7 @@ public interface IFileService
   /// <param name="provider">The provider type</param>
   /// <param name="fileId">The file ID</param>
   /// <returns>File metadata</returns>
-  Task<FileMetadata> GetFileMetadataAsync(string userId, ProviderType provider, string fileId);
+  Task<FileMetadata> GetFileMetadataAsync(Guid userId, ProviderType provider, string fileId);
 
   /// <summary>
   /// Get the web view URL for a file.
@@ -47,5 +47,5 @@ public interface IFileService
   /// <param name="provider">The provider type</param>
   /// <param name="fileId">The file ID</param>
   /// <returns>Web view URI</returns>
-  Task<Uri> GetFileViewUrlAsync(string userId, ProviderType provider, string fileId);
+  Task<Uri> GetFileViewUrlAsync(Guid userId, ProviderType provider, string fileId);
 }

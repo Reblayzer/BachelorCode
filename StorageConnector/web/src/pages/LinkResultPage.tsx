@@ -1,7 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useAuthStore } from "../state/auth-store";
 
 type LinkResultPageProps = {
   variant: "success" | "error";
@@ -12,22 +11,23 @@ export const LinkResultPage = ({ variant }: LinkResultPageProps) => {
   const provider = searchParams.get("provider");
   const error = searchParams.get("error");
   const queryClient = useQueryClient();
-  const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
 
   const isSuccess = variant === "success";
 
   useEffect(() => {
     if (isSuccess) {
-      setAuthenticated();
+      // Just invalidate queries - token is already in localStorage
       queryClient.invalidateQueries({ queryKey: ["connections"] });
     }
-  }, [isSuccess, queryClient, setAuthenticated]);
+  }, [isSuccess, queryClient]);
 
   return (
     <section className="mx-auto max-w-xl space-y-6 rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
       <div
         className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${
-          isSuccess ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+          isSuccess
+            ? "bg-emerald-100 text-emerald-600"
+            : "bg-red-100 text-red-600"
         }`}
       >
         {isSuccess ? "✓" : "!"}
@@ -39,8 +39,8 @@ export const LinkResultPage = ({ variant }: LinkResultPageProps) => {
         <p className="text-sm text-slate-600">
           {isSuccess
             ? `Your ${provider ?? "storage"} account is now linked.`
-            : error ??
-              "The link could not be completed. Please try again or start a fresh link from the connections page."}
+            : (error ??
+              "The link could not be completed. Please try again or start a fresh link from the connections page.")}
         </p>
       </div>
       <div className="flex justify-center gap-3">

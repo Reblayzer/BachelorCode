@@ -1,19 +1,34 @@
 import { create } from "zustand";
 
+const TOKEN_KEY = "auth_token";
+
 type AuthState = {
   isAuthenticated: boolean;
   userEmail?: string;
-  setAuthenticated: (email?: string) => void;
+  token?: string;
+  setAuthenticated: (email: string, token: string) => void;
   clear: () => void;
+  getToken: () => string | null;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
+// Initialize from localStorage
+const storedToken = localStorage.getItem(TOKEN_KEY);
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  isAuthenticated: !!storedToken,
   userEmail: undefined,
-  setAuthenticated: (email) =>
-    set((state) => ({
+  token: storedToken ?? undefined,
+  setAuthenticated: (email, token) => {
+    localStorage.setItem(TOKEN_KEY, token);
+    set({
       isAuthenticated: true,
-      userEmail: email ?? state.userEmail,
-    })),
-  clear: () => set({ isAuthenticated: false, userEmail: undefined }),
+      userEmail: email,
+      token,
+    });
+  },
+  clear: () => {
+    localStorage.removeItem(TOKEN_KEY);
+    set({ isAuthenticated: false, userEmail: undefined, token: undefined });
+  },
+  getToken: () => get().token ?? null,
 }));

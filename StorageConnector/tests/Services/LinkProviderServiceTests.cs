@@ -15,13 +15,15 @@ public sealed class LinkProviderServiceTests
         var tokenStore = new FakeTokenStore();
         var service = new LinkProviderService(new[] { oauth }, tokenStore, stateStore);
 
+        var userId = Guid.NewGuid();
         var redirectUri = new Uri("https://api.test/connect/google/callback");
         var scopes = new[] { "scope-a", "scope-b" };
 
-        var result = await service.StartAsync("user-1", ProviderType.Google, redirectUri, scopes);
+        var result = await service.StartAsync(userId, ProviderType.Google, redirectUri, scopes);
 
         Assert.Equal(oauth.AuthorizeResponse, result.ToString());
         Assert.Equal(ProviderType.Google, stateStore.LastSavedProvider);
+        Assert.Equal(userId, stateStore.LastSavedUserId);
         Assert.Equal(oauth.LastState, stateStore.LastSavedState);
         Assert.Equal(redirectUri, oauth.LastRedirectUri);
         Assert.Equal(scopes, oauth.LastScopes);
@@ -36,7 +38,7 @@ public sealed class LinkProviderServiceTests
         var service = new LinkProviderService(new[] { oauth }, new FakeTokenStore(), new FakeStateStore());
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.ConnectCallbackAsync("user-1", "missing-state", "code", new Uri("https://api.test/connect/google/callback")));
+            service.ConnectCallbackAsync("missing-state", "code", new Uri("https://api.test/connect/google/callback")));
     }
 
     [Fact]
@@ -47,19 +49,20 @@ public sealed class LinkProviderServiceTests
             ExchangeResult = new TokenSet("access-1", "refresh-1", DateTimeOffset.UtcNow.AddHours(1), new[] { "scope-a", "scope-b" })
         };
 
+        var userId = Guid.NewGuid();
         var stateStore = new FakeStateStore();
-        stateStore.Seed("expected-state", "code-verifier", ProviderType.Google);
+        stateStore.Seed("expected-state", userId, "code-verifier", ProviderType.Google);
 
         var tokenStore = new FakeTokenStore();
         var service = new LinkProviderService(new[] { oauth }, tokenStore, stateStore);
 
-        await service.ConnectCallbackAsync("user-1", "expected-state", "code-123", new Uri("https://api.test/connect/google/callback"));
+        await service.ConnectCallbackAsync("expected-state", "code-123", new Uri("https://api.test/connect/google/callback"));
 
         Assert.Equal("code-123", oauth.LastCode);
         Assert.Equal("code-verifier", oauth.LastCodeVerifier);
         Assert.Equal("refresh-1", tokenStore.LastDecryptedRefreshToken);
 
-        var stored = tokenStore.GetStored("user-1", ProviderType.Google);
+        var stored = tokenStore.GetStored(userId, ProviderType.Google);
         Assert.NotNull(stored);
         Assert.Equal("enc:refresh-1", stored!.EncryptedRefreshToken);
         Assert.Equal("scope-a scope-b", stored.ScopeCsv);
@@ -109,51 +112,53 @@ public sealed class LinkProviderServiceTests
 
     private sealed class FakeStateStore : IStateStore
     {
-        private readonly Dictionary<string, (string verifier, ProviderType provider)> _states = new();
+        private readonly Dictionary<string, (Guid userId, string verifier, ProviderType provider)> _states = new();
 
         public string? LastSavedState { get; private set; }
+        public Guid LastSavedUserId { get; private set; }
         public string? LastSavedVerifier { get; private set; }
         public ProviderType LastSavedProvider { get; private set; }
 
-        public Task SaveAsync(string state, string codeVerifier, ProviderType provider, TimeSpan ttl)
+        public Task SaveAsync(string state, Guid userId, string codeVerifier, ProviderType provider, TimeSpan ttl)
         {
             LastSavedState = state;
+            LastSavedUserId = userId;
             LastSavedVerifier = codeVerifier;
             LastSavedProvider = provider;
-            _states[state] = (codeVerifier, provider);
+            _states[state] = (userId, codeVerifier, provider);
             return Task.CompletedTask;
         }
 
-        public Task<(string codeVerifier, ProviderType provider)?> TakeAsync(string state)
+        public Task<(Guid userId, string codeVerifier, ProviderType provider)?> TakeAsync(string state)
         {
             if (_states.TryGetValue(state, out var entry))
             {
                 _states.Remove(state);
-                return Task.FromResult<(string, ProviderType)?>(entry);
+                return Task.FromResult<(Guid, string, ProviderType)?>(entry);
             }
 
-            return Task.FromResult<(string, ProviderType)?>(null);
+            return Task.FromResult<(Guid, string, ProviderType)?>(null);
         }
 
-        public void Seed(string state, string verifier, ProviderType provider)
+        public void Seed(string state, Guid userId, string verifier, ProviderType provider)
         {
-            _states[state] = (verifier, provider);
+            _states[state] = (userId, verifier, provider);
         }
     }
 
     private sealed class FakeTokenStore : ITokenStore
     {
-        private readonly Dictionary<(string userId, ProviderType provider), ProviderAccount> _accounts = new();
+        private readonly Dictionary<(Guid userId, ProviderType provider), ProviderAccount> _accounts = new();
 
         public string? LastDecryptedRefreshToken { get; private set; }
 
-        public Task<ProviderAccount?> GetAsync(string userId, ProviderType provider)
+        public Task<ProviderAccount?> GetAsync(Guid userId, ProviderType provider)
         {
             _accounts.TryGetValue((userId, provider), out var account);
             return Task.FromResult(account);
         }
 
-        public Task<IReadOnlyList<ProviderAccount>> GetAllByUserAsync(string userId)
+        public Task<IReadOnlyList<ProviderAccount>> GetAllByUserAsync(Guid userId)
         {
             var accounts = _accounts
                 .Where(kv => kv.Key.userId == userId)
@@ -168,7 +173,7 @@ public sealed class LinkProviderServiceTests
             return Task.CompletedTask;
         }
 
-        public Task DeleteAsync(string userId, ProviderType provider)
+        public Task DeleteAsync(Guid userId, ProviderType provider)
         {
             _accounts.Remove((userId, provider));
             return Task.CompletedTask;
@@ -182,7 +187,7 @@ public sealed class LinkProviderServiceTests
 
         public string Decrypt(string ciphertext) => ciphertext.Replace("enc:", "", StringComparison.Ordinal);
 
-        public ProviderAccount? GetStored(string userId, ProviderType provider) =>
+        public ProviderAccount? GetStored(Guid userId, ProviderType provider) =>
             _accounts.TryGetValue((userId, provider), out var account) ? account : null;
     }
 }
