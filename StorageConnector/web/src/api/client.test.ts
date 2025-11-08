@@ -26,7 +26,7 @@ describe('identityRequest', () => {
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    global.fetch = fetchMock;
+    global.fetch = fetchMock as unknown as typeof fetch;
   });
 
   afterEach(() => {
@@ -257,7 +257,7 @@ describe('linkingRequest', () => {
 
   beforeEach(() => {
     fetchMock = vi.fn();
-    global.fetch = fetchMock;
+    global.fetch = fetchMock as unknown as typeof fetch;
   });
 
   afterEach(() => {

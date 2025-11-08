@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, within } from "@/test/test-utils";
+import { render, screen, waitFor } from "@/test/test-utils";
 import { FilesPage } from "./FilesPage";
 import { getFiles } from "../api/files";
 import type { ProviderFileItem } from "../api/files";
