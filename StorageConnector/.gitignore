@@ -1,2 +1,13 @@
+# Data Protection Keys
 data/dp-keys/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
 storage.db
+identity.db
+linking.db
+
+# Development settings with secrets
+appsettings.Development.json

@@ -5,8 +5,17 @@ using LinkingService.Infrastructure.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Rate Limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 // Database - separate database for LinkingService
 builder.Services.AddDbContext<LinkingDbContext>(options =>
@@ -41,7 +50,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-builder.Services.AddMemoryCache();
+builder.Services.AddMemoryCache(); // Removed duplicate - already added for rate limiting
 
 // CORS
 var allowedOrigins = builder.Configuration
@@ -74,6 +83,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Security Headers
+app.UseMiddleware<LinkingService.Api.Middleware.SecurityHeadersMiddleware>();
+
+// HSTS (HTTP Strict Transport Security) - only in production
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+
+app.UseIpRateLimiting();
 app.UseMiddleware<LinkingService.Api.Middleware.ExceptionMappingMiddleware>();
 app.UseCors("Spa");
 app.UseAuthentication();
