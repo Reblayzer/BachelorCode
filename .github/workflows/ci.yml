@@ -43,7 +43,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: backend-test-results
-        path: '**/test-results.trx'
+        path: 'StorageConnector/**/test-results.trx'
         
     - name: Publish IdentityService
       run: dotnet publish services/IdentityService/Api/IdentityService.Api.csproj --configuration Release --output ./publish/IdentityService --no-build
@@ -55,13 +55,13 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: IdentityService
-        path: ./publish/IdentityService
+        path: ./StorageConnector/publish/IdentityService
         
     - name: Upload LinkingService artifact
       uses: actions/upload-artifact@v4
       with:
         name: LinkingService
-        path: ./publish/LinkingService
+        path: ./StorageConnector/publish/LinkingService
 
   # Job 2: Build and Test Frontend
   frontend:
