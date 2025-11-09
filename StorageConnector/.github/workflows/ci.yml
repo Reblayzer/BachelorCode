@@ -1,0 +1,144 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  NODE_VERSION: '18.x'
+
+jobs:
+  # Job 1: Build and Test Backend
+  backend:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore StorageConnector.sln
+      
+    - name: Build solution
+      run: dotnet build StorageConnector.sln --configuration Release --no-restore
+      
+    - name: Run tests
+      run: dotnet test StorageConnector.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-test-results
+        path: '**/test-results.trx'
+        
+    - name: Publish IdentityService
+      run: dotnet publish services/IdentityService/Api/IdentityService.Api.csproj --configuration Release --output ./publish/IdentityService --no-build
+      
+    - name: Publish LinkingService
+      run: dotnet publish services/LinkingService/Api/LinkingService.Api.csproj --configuration Release --output ./publish/LinkingService --no-build
+      
+    - name: Upload IdentityService artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: IdentityService
+        path: ./publish/IdentityService
+        
+    - name: Upload LinkingService artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: LinkingService
+        path: ./publish/LinkingService
+
+  # Job 2: Build and Test Frontend
+  frontend:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./web
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: './web/package-lock.json'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linter
+      run: npm run lint
+      continue-on-error: true
+      
+    - name: Run tests
+      run: npm test -- --run
+      
+    - name: Build frontend
+      run: npm run build
+      
+    - name: Upload frontend artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Frontend
+        path: ./web/dist
+
+  # Job 3: Code Quality Analysis
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+        
+    - name: Restore dependencies
+      run: dotnet restore StorageConnector.sln
+      
+    - name: Check code formatting
+      run: dotnet format StorageConnector.sln --verify-no-changes --verbosity diagnostic
+      continue-on-error: true
+      
+    - name: Run security scan
+      uses: securego/gosec@master
+      continue-on-error: true
+
+  # Job 4: Build Status Summary
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, code-quality]
+    if: always()
+    
+    steps:
+    - name: Check build status
+      run: |
+        echo "Backend Status: ${{ needs.backend.result }}"
+        echo "Frontend Status: ${{ needs.frontend.result }}"
+        echo "Code Quality Status: ${{ needs.code-quality.result }}"
+        
+        if [ "${{ needs.backend.result }}" != "success" ] || [ "${{ needs.frontend.result }}" != "success" ]; then
+          echo "Build failed!"
+          exit 1
+        fi
+        
+        echo "Build successful!"

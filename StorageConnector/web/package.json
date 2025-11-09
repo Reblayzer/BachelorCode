@@ -10,6 +10,7 @@
     "dev:linking": "cd ../services/LinkingService/Api && dotnet run --launch-profile https",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "lint": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage"
