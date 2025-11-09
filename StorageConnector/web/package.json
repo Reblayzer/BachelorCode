@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test": "vitest",
+    "test:ci": "vitest run --reporter=verbose",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage"
   },
