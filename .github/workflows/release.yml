@@ -13,6 +13,9 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./StorageConnector
     
     steps:
     - name: Checkout code
@@ -28,7 +31,7 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        cache-dependency-path: './web/package-lock.json'
+        cache-dependency-path: './StorageConnector/web/package-lock.json'
         
     # Build Backend
     - name: Restore .NET dependencies
