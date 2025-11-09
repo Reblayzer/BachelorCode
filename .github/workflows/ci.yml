@@ -91,7 +91,9 @@ jobs:
       continue-on-error: true
       
     - name: Run tests
-      run: npm test -- --run
+      run: npm test -- --run --reporter=verbose
+      env:
+        CI: true
       
     - name: Build frontend
       run: npm run build
