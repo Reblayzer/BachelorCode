@@ -12,14 +12,20 @@ StorageConnector follows **Clean Architecture** principles with a microservices 
 ```
 StorageConnector/
 ├── services/
-│   ├── IdentityService/     # User authentication & authorization
-│   └── LinkingService/       # Cloud storage provider integration
-├── libs/
-│   ├── Contracts/           # Shared contracts and DTOs
-│   ├── Core/                # Domain and Application layers
-│   └── Infrastructure/      # Infrastructure implementations
-├── web/                     # React frontend (Vite + TypeScript)
-└── tests/                   # Integration and unit tests
+│   ├── IdentityService/          # User authentication & authorization
+│   │   ├── Domain/               # Business entities and domain logic
+│   │   ├── Application/          # Use cases and business rules
+│   │   ├── Infrastructure/       # Data access, email, external services
+│   │   └── Api/                  # REST API controllers and middleware
+│   └── LinkingService/           # Cloud storage provider integration
+│       ├── Domain/               # Business entities and domain logic
+│       ├── Application/          # Use cases and business rules
+│       ├── Infrastructure/       # OAuth, file providers, data access
+│       └── Api/                  # REST API controllers and middleware
+├── web/                          # React frontend (Vite + TypeScript)
+└── tests/                        # Integration and unit tests
+    ├── IdentityService.Tests/
+    └── LinkingService.Tests/
 ```
 
 ### Services
@@ -192,10 +198,17 @@ StorageConnector implements comprehensive security measures:
 
 ### Project Structure
 
-- **Domain Layer** (`libs/Core/Domain`) - Business entities and rules
-- **Application Layer** (`libs/Core/Application`) - Use cases and business logic
-- **Infrastructure Layer** (`libs/Infrastructure`) - External concerns (database, email, OAuth)
-- **API Layer** (`services/*/Api`) - REST API controllers and middleware
+Each microservice follows **Clean Architecture** with four distinct layers:
+
+- **Domain Layer** (`services/*/Domain`) - Business entities, value objects, and domain logic
+- **Application Layer** (`services/*/Application`) - Use cases, interfaces, and business rules
+- **Infrastructure Layer** (`services/*/Infrastructure`) - External concerns (database, email, OAuth, file providers)
+- **API Layer** (`services/*/Api`) - REST API controllers, middleware, and configuration
+
+This separation ensures:
+- **Independence**: Each service is self-contained with its own layers
+- **Testability**: Domain and application logic can be tested without infrastructure
+- **Maintainability**: Clear boundaries between business logic and technical details
 
 ### Technology Stack
 
