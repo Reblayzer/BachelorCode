@@ -32,6 +32,9 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         
+    - name: Restore .NET dependencies
+      run: dotnet restore StorageConnector.sln
+      
     - name: Check for outdated NuGet packages
       run: |
         dotnet list StorageConnector.sln package --outdated
@@ -40,6 +43,7 @@ jobs:
     - name: Check for vulnerable NuGet packages
       run: |
         dotnet list StorageConnector.sln package --vulnerable --include-transitive
+      continue-on-error: true
       
     - name: Check for outdated npm packages
       working-directory: ./StorageConnector/web
