@@ -206,6 +206,7 @@ Each microservice follows **Clean Architecture** with four distinct layers:
 - **API Layer** (`services/*/Api`) - REST API controllers, middleware, and configuration
 
 This separation ensures:
+
 - **Independence**: Each service is self-contained with its own layers
 - **Testability**: Domain and application logic can be tested without infrastructure
 - **Maintainability**: Clear boundaries between business logic and technical details

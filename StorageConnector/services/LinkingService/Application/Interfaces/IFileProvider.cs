@@ -1,4 +1,4 @@
-using LinkingService.Application.DTOs;
+Ôªøusing LinkingService.Application.DTOs;
 using LinkingService.Domain;
 
 namespace LinkingService.Application.Interfaces;
@@ -7,7 +7,7 @@ public interface IFileProvider
 {
     ProviderType Provider { get; }
 
-    // simple ìpageî result you can replace later
+    // simple ‚Äúpage‚Äù result you can replace later
     Task<(IReadOnlyList<FileItem> items, string? nextPageToken)> ListAsync(
         string userId, string? folderId, int pageSize, string? pageToken);
 
