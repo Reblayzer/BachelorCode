@@ -1,3 +1,5 @@
+using Asp.Versioning;
+using LinkingService.Api.DTOs;
 using LinkingService.Application.DTOs;
 using LinkingService.Application.Interfaces;
 using LinkingService.Domain;
@@ -8,7 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace LinkingService.Api.Controllers;
 
 [ApiController]
-[Route("api/files")]
+[Route("api/v{version:apiVersion}/files")]
+[ApiVersion("1.0")]
 [Authorize]
 public sealed class FilesController : ControllerBase
 {
@@ -100,19 +103,3 @@ public sealed class FilesController : ControllerBase
     return Ok(new FileViewUrlResponse(viewUrl.ToString()));
   }
 }
-
-/// <summary>
-/// Response DTO for paginated file lists.
-/// </summary>
-/// <param name="Items">The list of files.</param>
-/// <param name="NextPageToken">Token for retrieving the next page of results.</param>
-public sealed record FileListResponse(
-    IReadOnlyList<FileItem> Items,
-    string? NextPageToken
-);
-
-/// <summary>
-/// Response DTO for file view URL.
-/// </summary>
-/// <param name="Url">The URL to view the file in the provider's web interface.</param>
-public sealed record FileViewUrlResponse(string Url);

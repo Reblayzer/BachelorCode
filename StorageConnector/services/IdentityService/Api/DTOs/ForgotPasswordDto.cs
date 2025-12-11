@@ -1,3 +1,11 @@
 namespace IdentityService.Api.DTOs;
 
-public sealed record ForgotPasswordDto(string Email);
+using System.ComponentModel.DataAnnotations;
+
+public sealed record ForgotPasswordDto
+{
+    [Required]
+    [EmailAddress]
+    [MaxLength(256)]
+    public string Email { get; init; } = string.Empty;
+}

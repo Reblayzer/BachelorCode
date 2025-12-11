@@ -19,6 +19,9 @@ describe("AccountPage", () => {
     vi.mocked(useAuthStore).mockReturnValue("test@example.com");
   });
 
+  const getInput = (label: RegExp) =>
+    screen.getByLabelText(label, { selector: "input" });
+
   it("renders account settings page", () => {
     render(<AccountPage />);
 
@@ -43,9 +46,9 @@ describe("AccountPage", () => {
     expect(
       screen.getByRole("heading", { name: /change password/i })
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/current password/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^new password$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirm new password/i)).toBeInTheDocument();
+    expect(getInput(/current password/i)).toBeInTheDocument();
+    expect(getInput(/^new password$/i)).toBeInTheDocument();
+    expect(getInput(/confirm new password/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /change password/i })
     ).toBeInTheDocument();
@@ -58,12 +61,12 @@ describe("AccountPage", () => {
     render(<AccountPage />);
 
     await user.type(
-      screen.getByLabelText(/current password/i),
+      getInput(/current password/i),
       "currentpass123"
     );
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm new password/i),
+      getInput(/confirm new password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /change password/i }));
@@ -81,9 +84,9 @@ describe("AccountPage", () => {
 
     render(<AccountPage />);
 
-    const currentInput = screen.getByLabelText(/current password/i);
-    const newInput = screen.getByLabelText(/^new password$/i);
-    const confirmInput = screen.getByLabelText(/confirm new password/i);
+    const currentInput = getInput(/current password/i);
+    const newInput = getInput(/^new password$/i);
+    const confirmInput = getInput(/confirm new password/i);
 
     await user.type(currentInput, "currentpass123");
     await user.type(newInput, "newpassword123");
@@ -103,12 +106,12 @@ describe("AccountPage", () => {
     render(<AccountPage />);
 
     await user.type(
-      screen.getByLabelText(/current password/i),
+      getInput(/current password/i),
       "currentpass123"
     );
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm new password/i),
+      getInput(/confirm new password/i),
       "differentpassword"
     );
     await user.click(screen.getByRole("button", { name: /change password/i }));
@@ -123,11 +126,11 @@ describe("AccountPage", () => {
     render(<AccountPage />);
 
     await user.type(
-      screen.getByLabelText(/current password/i),
+      getInput(/current password/i),
       "currentpass123"
     );
-    await user.type(screen.getByLabelText(/^new password$/i), "short");
-    await user.type(screen.getByLabelText(/confirm new password/i), "short");
+    await user.type(getInput(/^new password$/i), "short");
+    await user.type(getInput(/confirm new password/i), "short");
     await user.click(screen.getByRole("button", { name: /change password/i }));
 
     expect(
@@ -145,12 +148,12 @@ describe("AccountPage", () => {
     render(<AccountPage />);
 
     await user.type(
-      screen.getByLabelText(/current password/i),
+      getInput(/current password/i),
       "currentpass123"
     );
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm new password/i),
+      getInput(/confirm new password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /change password/i }));
@@ -167,12 +170,12 @@ describe("AccountPage", () => {
     render(<AccountPage />);
 
     await user.type(
-      screen.getByLabelText(/current password/i),
+      getInput(/current password/i),
       "wrongpassword"
     );
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm new password/i),
+      getInput(/confirm new password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /change password/i }));
@@ -193,12 +196,12 @@ describe("AccountPage", () => {
     render(<AccountPage />);
 
     await user.type(
-      screen.getByLabelText(/current password/i),
+      getInput(/current password/i),
       "currentpass123"
     );
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm new password/i),
+      getInput(/confirm new password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /change password/i }));
@@ -213,23 +216,23 @@ describe("AccountPage", () => {
   it("requires all password fields", () => {
     render(<AccountPage />);
 
-    expect(screen.getByLabelText(/current password/i)).toBeRequired();
-    expect(screen.getByLabelText(/^new password$/i)).toBeRequired();
-    expect(screen.getByLabelText(/confirm new password/i)).toBeRequired();
+    expect(getInput(/current password/i)).toBeRequired();
+    expect(getInput(/^new password$/i)).toBeRequired();
+    expect(getInput(/confirm new password/i)).toBeRequired();
   });
 
   it("has password input types", () => {
     render(<AccountPage />);
 
-    expect(screen.getByLabelText(/current password/i)).toHaveAttribute(
+    expect(getInput(/current password/i)).toHaveAttribute(
       "type",
       "password"
     );
-    expect(screen.getByLabelText(/^new password$/i)).toHaveAttribute(
+    expect(getInput(/^new password$/i)).toHaveAttribute(
       "type",
       "password"
     );
-    expect(screen.getByLabelText(/confirm new password/i)).toHaveAttribute(
+    expect(getInput(/confirm new password/i)).toHaveAttribute(
       "type",
       "password"
     );

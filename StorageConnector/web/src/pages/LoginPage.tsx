@@ -10,6 +10,7 @@ export const LoginPage = () => {
   const clear = useAuthStore((state) => state.clear);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -101,15 +102,26 @@ export const LoginPage = () => {
               Forgot password?
             </Link>
           </div>
-          <input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-12 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-semibold text-slate-500 hover:text-slate-700 focus:outline-none"
+              aria-label={`${showPassword ? "Hide" : "Show"} password`}
+              aria-pressed={showPassword}
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
         </div>
 
         <button
@@ -119,7 +131,6 @@ export const LoginPage = () => {
         >
           {loginMutation.isPending ? "Signing in…" : "Sign in"}
         </button>
-
         <p className="text-xs text-slate-500">
           Trouble signing in? Confirm your email first or contact support.
         </p>
@@ -127,3 +138,5 @@ export const LoginPage = () => {
     </div>
   );
 };
+
+

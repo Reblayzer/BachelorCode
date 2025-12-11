@@ -8,11 +8,6 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace IdentityService.Infrastructure.Services;
 
-public interface IJwtService
-{
-  string GenerateToken(User user);
-}
-
 public sealed class JwtService : IJwtService
 {
   private readonly JwtSettings _settings;

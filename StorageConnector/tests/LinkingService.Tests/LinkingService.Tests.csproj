@@ -25,8 +25,6 @@
     <ProjectReference Include="..\..\services\LinkingService\Application\LinkingService.Application.csproj" />
     <ProjectReference Include="..\..\services\LinkingService\Infrastructure\LinkingService.Infrastructure.csproj" />
     <ProjectReference Include="..\..\services\LinkingService\Api\LinkingService.Api.csproj" />
-    <!-- Reference IdentityService for integration tests that use auth -->
-    <ProjectReference Include="..\..\services\IdentityService\Application\IdentityService.Application.csproj" />
   </ItemGroup>
 
 </Project>

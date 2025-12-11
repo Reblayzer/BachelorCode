@@ -1,3 +1,16 @@
 namespace IdentityService.Api.DTOs;
 
-public sealed record LoginDto(string Email, string Password);
+using System.ComponentModel.DataAnnotations;
+
+public sealed record LoginDto
+{
+    [Required]
+    [EmailAddress]
+    [MaxLength(256)]
+    public string Email { get; init; } = string.Empty;
+
+    [Required]
+    [MinLength(8)]
+    [MaxLength(128)]
+    public string Password { get; init; } = string.Empty;
+}

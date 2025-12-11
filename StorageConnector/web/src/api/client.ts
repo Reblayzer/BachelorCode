@@ -13,8 +13,20 @@ export class ApiError extends Error {
 export type ApiRequestInit = Omit<RequestInit, "body" | "headers"> & {
   body?: unknown;
   headers?: Record<string, string>;
+  /**
+   * Optional client-side timeout (ms). If provided, the request is aborted after this duration.
+   * To use your own AbortSignal, pass `signal` instead.
+   */
+  timeoutMs?: number;
 };
 
+const apiBase =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(
+    /\/$/,
+    "",
+  );
+
+// Legacy: Direct service URLs (fallback when API Gateway not used)
 const identityBase =
   (import.meta.env.VITE_IDENTITY_BASE_URL as string | undefined)?.replace(
     /\/$/,
@@ -28,6 +40,7 @@ const linkingBase =
 
 const defaultHeaders = {
   Accept: "application/json",
+  "X-Api-Version": "1.0", // API versioning support
 };
 
 // Get token from localStorage
@@ -39,15 +52,18 @@ const resolveUrl = (base: string | undefined, path: string) =>
   base ? `${base}${path}` : path;
 
 const toJson = (input: Response) => input.json() as Promise<unknown>;
+const DEFAULT_TIMEOUT_MS = 30000;
 
 async function request<TResponse>(
   baseUrl: string | undefined,
   path: string,
   init: ApiRequestInit = {},
 ): Promise<TResponse> {
+  const { timeoutMs, signal, ...rest } = init;
+
   const headers: Record<string, string> = {
     ...defaultHeaders,
-    ...(init.headers ?? {}),
+    ...(rest.headers ?? {}),
   };
 
   // Add Authorization header if token exists
@@ -58,19 +74,35 @@ async function request<TResponse>(
 
   let body: BodyInit | undefined;
 
-  if (init.body instanceof FormData) {
-    body = init.body;
-  } else if (init.body !== undefined) {
+  if (rest.body instanceof FormData) {
+    body = rest.body;
+  } else if (rest.body !== undefined) {
     headers["Content-Type"] = "application/json";
-    body = JSON.stringify(init.body);
+    body = JSON.stringify(rest.body);
   }
 
+  // If caller provided a signal, prefer it and skip timeout handling to avoid double-aborts.
+  const controller =
+    !signal && (timeoutMs ?? DEFAULT_TIMEOUT_MS) > 0
+      ? new AbortController()
+      : undefined;
+  const abortSignal = signal ?? controller?.signal;
+  const timeoutId =
+    controller && (timeoutMs ?? DEFAULT_TIMEOUT_MS)
+      ? setTimeout(() => controller.abort(), timeoutMs ?? DEFAULT_TIMEOUT_MS)
+      : undefined;
+
   const response = await fetch(resolveUrl(baseUrl, path), {
-    ...init,
+    ...rest,
     headers,
     body,
     credentials: "include",
+    signal: abortSignal,
   });
+
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
 
   const contentType = response.headers.get("content-type") ?? "";
   const hasJson = contentType.includes("application/json");
@@ -110,12 +142,13 @@ async function request<TResponse>(
   return payload as TResponse;
 }
 
+// Use API Gateway if configured, otherwise fall back to direct service URLs
 export const identityRequest = <TResponse>(
   path: string,
   init?: ApiRequestInit,
-) => request<TResponse>(identityBase, path, init);
+) => request<TResponse>(apiBase || identityBase, path, init);
 
 export const linkingRequest = <TResponse>(
   path: string,
   init?: ApiRequestInit,
-) => request<TResponse>(linkingBase, path, init);
+) => request<TResponse>(apiBase || linkingBase, path, init);

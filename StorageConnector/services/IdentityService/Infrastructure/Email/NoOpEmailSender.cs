@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace IdentityService.Infrastructure.Email;
 
 public sealed class NoOpEmailSender : IEmailSender

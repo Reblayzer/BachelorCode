@@ -3,35 +3,44 @@
 [![CI/CD Pipeline](https://github.com/Reblayzer/BachelorCode/actions/workflows/ci.yml/badge.svg)](https://github.com/Reblayzer/BachelorCode/actions/workflows/ci.yml)
 [![Security](https://github.com/Reblayzer/BachelorCode/actions/workflows/security.yml/badge.svg)](https://github.com/Reblayzer/BachelorCode/actions/workflows/security.yml)
 
-A secure microservices-based application that enables users to connect and manage their cloud storage accounts (Google Drive, OneDrive) through a unified interface.
+A secure **microservices-based** application that enables users to connect and manage their cloud storage accounts (Google Drive, OneDrive) through a unified interface with true service isolation and production-ready patterns.
 
-## 🏗️ Architecture
+## 🏗️ Microservices Architecture
 
-StorageConnector follows **Clean Architecture** principles with a microservices approach:
+StorageConnector implements **true microservices** with Clean Architecture principles:
 
 ```
 StorageConnector/
+├── ApiGateway/                    # YARP reverse proxy (Port 5001)
 ├── services/
-│   ├── IdentityService/          # User authentication & authorization
-│   │   ├── Domain/               # Business entities and domain logic
-│   │   ├── Application/          # Use cases and business rules
-│   │   ├── Infrastructure/       # Data access, email, external services
-│   │   └── Api/                  # REST API controllers and middleware
-│   └── LinkingService/           # Cloud storage provider integration
-│       ├── Domain/               # Business entities and domain logic
-│       ├── Application/          # Use cases and business rules
-│       ├── Infrastructure/       # OAuth, file providers, data access
-│       └── Api/                  # REST API controllers and middleware
-├── web/                          # React frontend (Vite + TypeScript)
-└── tests/                        # Integration and unit tests
-    ├── IdentityService.Tests/
-    └── LinkingService.Tests/
+│   ├── IdentityService/          # Authentication & user management
+│   │   ├── IdentityService.sln  # ← Independent solution
+│   │   ├── Domain/               # Business entities
+│   │   ├── Application/          # Use cases
+│   │   ├── Infrastructure/       # Data access, email
+│   │   └── Api/                  # REST API (Port 7166)
+│   └── LinkingService/           # Cloud storage integration
+│       ├── LinkingService.sln   # ← Independent solution
+│       ├── Domain/               # Business entities
+│       ├── Application/          # Use cases
+│       ├── Infrastructure/       # OAuth, file providers
+│       └── Api/                  # REST API (Port 7134)
+├── tests/
+│   ├── IdentityService.Tests/
+│   └── LinkingService.Tests/
+└── web/                          # React frontend (Vite + TypeScript)
 ```
 
-### Services
+### Key Architectural Improvements
 
-- **IdentityService** (Port 7166): Handles user registration, login, email confirmation, and JWT token generation
-- **LinkingService** (Port 7134): Manages OAuth flows and cloud storage provider connections
+✅ **Separate Solutions**: Each service independently buildable/deployable  
+✅ **Token Introspection**: Secure inter-service authentication  
+✅ **API Versioning**: `/api/v1/auth/...` with header support  
+✅ **Health Checks**: `/health`, `/health/ready`, `/health/live`  
+✅ **API Gateway**: YARP with circuit breaker & retry policies  
+✅ **Correlation IDs**: Request tracing across services  
+✅ **Independent Databases**: `identity.db` & `linking.db`  
+✅ **Resilience Patterns**: Circuit breaker, retries, timeouts
 
 ## 🚀 Getting Started
 
@@ -110,19 +119,51 @@ npm install
 
 ### 5. Run the Application
 
+#### Option A: With API Gateway (Recommended)
+
+The API Gateway provides a unified entry point with resilience patterns:
+
+```bash
+# Terminal 1: IdentityService
+cd services/IdentityService/Api
+dotnet run
+
+# Terminal 2: LinkingService
+cd services/LinkingService/Api
+dotnet run
+
+# Terminal 3: API Gateway
+cd ApiGateway
+dotnet user-secrets set "Jwt:SecretKey" "YOUR_64_CHAR_KEY"
+dotnet run
+
+# Terminal 4: Frontend
+cd web
+npm run dev
+```
+
+**Access the application:**
+
+- Frontend: http://localhost:5173
+- API Gateway: https://localhost:5001
+- IdentityService (direct): https://localhost:7166
+- LinkingService (direct): https://localhost:7134
+
+#### Option B: Direct Service Access (Development)
+
 From the `web` directory, run:
 
 ```bash
 npm run dev
 ```
 
-This single command will start:
+This will start all services and the frontend automatically.
 
-- **Frontend** on http://localhost:5173
-- **IdentityService** on https://localhost:7166
-- **LinkingService** on https://localhost:7134
+## 📚 Architecture Documentation
 
-The application will automatically open in your browser.
+- **[MICROSERVICES_ANALYSIS.md](./MICROSERVICES_ANALYSIS.md)** - Detailed analysis of architecture decisions
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Production deployment strategies
+- **[SECURITY_SETUP.md](./SECURITY_SETUP.md)** - Security configuration guide
 
 ## Testing
 
@@ -166,9 +207,14 @@ StorageConnector implements comprehensive security measures:
 
 ## API Documentation
 
-### IdentityService Endpoints
+### Microservices Endpoints
 
-**Base URL**: `https://localhost:7166/api`
+All services support **API versioning** via URL or headers.
+
+#### IdentityService Endpoints
+
+**Base URL (Direct)**: `https://localhost:7166/api/v1`  
+**Base URL (Gateway)**: `https://localhost:5001/api/v1`
 
 | Method | Endpoint                | Description               | Auth Required |
 | ------ | ----------------------- | ------------------------- | ------------- |
@@ -178,21 +224,33 @@ StorageConnector implements comprehensive security measures:
 | POST   | `/auth/forgot-password` | Request password reset    | No            |
 | POST   | `/auth/reset-password`  | Reset password with token | No            |
 | GET    | `/auth/me`              | Get current user info     | Yes           |
+| POST   | `/auth/introspect`      | Validate JWT token        | No            |
 
-### LinkingService Endpoints
+#### LinkingService Endpoints
 
-**Base URL**: `https://localhost:7134/api`
+**Base URL (Direct)**: `https://localhost:7134/api/v1`  
+**Base URL (Gateway)**: `https://localhost:5001/api/v1`
 
 | Method | Endpoint                              | Description              | Auth Required |
 | ------ | ------------------------------------- | ------------------------ | ------------- |
 | GET    | `/connect/{provider}/start`           | Start OAuth flow         | Yes           |
 | GET    | `/connect/{provider}/callback`        | OAuth callback           | No            |
-| GET    | `/connections`                        | List user's connections  | Yes           |
-| DELETE | `/connections/{provider}`             | Disconnect provider      | Yes           |
+| GET    | `/connections/status`                 | List user's connections  | Yes           |
+| POST   | `/connect/{provider}/disconnect`      | Disconnect provider      | Yes           |
 | GET    | `/files/{provider}`                   | List files from provider | Yes           |
 | GET    | `/files/{provider}/{fileId}/view-url` | Get file URL             | Yes           |
 
 **Supported Providers**: `google`, `microsoft`
+
+#### Health Check Endpoints
+
+| Service         | Endpoint           | Description                           |
+| --------------- | ------------------ | ------------------------------------- |
+| API Gateway     | `/health`          | Gateway health                        |
+| IdentityService | `/health/identity` | Identity service health (via gateway) |
+| LinkingService  | `/health/linking`  | Linking service health (via gateway)  |
+| All Services    | `/health/ready`    | Readiness probe                       |
+| All Services    | `/health/live`     | Liveness probe                        |
 
 ## 🛠️ Development
 

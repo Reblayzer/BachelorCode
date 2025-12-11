@@ -4,10 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently --kill-others-on-fail \"npm:dev:frontend\" \"npm:dev:identity\" \"npm:dev:linking\"",
-    "dev:frontend": "vite",
-    "dev:identity": "cd ../services/IdentityService/Api && dotnet run --launch-profile https",
-    "dev:linking": "cd ../services/LinkingService/Api && dotnet run --launch-profile https",
+    "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",

@@ -18,7 +18,7 @@ public class ConfirmationLinkGenerator : IConfirmationLinkGenerator
     if (string.IsNullOrEmpty(token)) return string.Empty;
     if (string.IsNullOrEmpty(scheme)) scheme = "https";
     if (string.IsNullOrEmpty(host)) host = _httpContextAccessor.HttpContext?.Request.Host.ToString() ?? "localhost";
-    var uri = _linkGenerator.GetUriByAction(action: "ConfirmEmail", controller: "Auth", values: new { userId, token }, scheme: scheme, host: new HostString(host));
+    var uri = _linkGenerator.GetUriByAction(action: "ConfirmEmail", controller: "Auth", values: new { userId, token, version = "1" }, scheme: scheme, host: new HostString(host));
     return uri ?? string.Empty;
   }
 

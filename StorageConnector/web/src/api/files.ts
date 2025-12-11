@@ -20,11 +20,11 @@ export interface FileMetadata {
 }
 
 export async function getFiles(): Promise<ProviderFileItem[]> {
-  return await linkingRequest<ProviderFileItem[]>("/api/files");
+  return await linkingRequest<ProviderFileItem[]>("/api/v1/files");
 }
 
 export async function getFileMetadata(provider: ProviderType, fileId: string): Promise<FileMetadata> {
-  return await linkingRequest<FileMetadata>(`/api/files/${provider}/${fileId}/metadata`);
+  return await linkingRequest<FileMetadata>(`/api/v1/files/${provider}/${fileId}/metadata`);
 }
 
 /**
@@ -33,7 +33,7 @@ export async function getFileMetadata(provider: ProviderType, fileId: string): P
  */
 export async function openFileInProvider(provider: ProviderType, fileId: string): Promise<void> {
   // Call the backend endpoint that returns the view URL as JSON
-  const response = await linkingRequest<{ url: string }>(`/api/files/${provider}/${fileId}/view-url`);
+  const response = await linkingRequest<{ url: string }>(`/api/v1/files/${provider}/${fileId}/view-url`);
 
   // Open the URL in a new tab
   window.open(response.url, "_blank");

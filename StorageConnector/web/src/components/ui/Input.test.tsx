@@ -139,7 +139,26 @@ describe("Input", () => {
 
   it("renders password type input", () => {
     render(<Input type="password" label="Password" />);
-    const input = screen.getByLabelText(/password/i);
+    const input = screen.getByLabelText(/password/i, { selector: "input" });
     expect(input).toHaveAttribute("type", "password");
+  });
+
+  it("toggles password visibility", async () => {
+    const user = userEvent.setup();
+    render(<Input type="password" label="Password" />);
+
+    const input = screen.getByLabelText(/password/i, { selector: "input" });
+    const toggle = screen.getByRole("button", { name: /show password/i });
+
+    expect(input).toHaveAttribute("type", "password");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(toggle);
+    expect(input).toHaveAttribute("type", "text");
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(toggle);
+    expect(input).toHaveAttribute("type", "password");
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
   });
 });

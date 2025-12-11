@@ -1,0 +1,48 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinkingService.Domain", "Domain\LinkingService.Domain.csproj", "{600FBC5B-2C66-4B32-AFFE-E7B4C4DCF3DE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinkingService.Application", "Application\LinkingService.Application.csproj", "{268752FF-69F6-4785-82B9-6B52EC0A4144}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinkingService.Infrastructure", "Infrastructure\LinkingService.Infrastructure.csproj", "{8CBC456F-942D-49B8-A5E5-22C5E9724343}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinkingService.Api", "Api\LinkingService.Api.csproj", "{B9029F87-AB43-4934-ACC0-728959232FA7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinkingService.Tests", "..\..\tests\LinkingService.Tests\LinkingService.Tests.csproj", "{6332B8AC-8FD3-48CC-BD6C-EB69742E80E1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{600FBC5B-2C66-4B32-AFFE-E7B4C4DCF3DE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{600FBC5B-2C66-4B32-AFFE-E7B4C4DCF3DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{600FBC5B-2C66-4B32-AFFE-E7B4C4DCF3DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{600FBC5B-2C66-4B32-AFFE-E7B4C4DCF3DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{268752FF-69F6-4785-82B9-6B52EC0A4144}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{268752FF-69F6-4785-82B9-6B52EC0A4144}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{268752FF-69F6-4785-82B9-6B52EC0A4144}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{268752FF-69F6-4785-82B9-6B52EC0A4144}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8CBC456F-942D-49B8-A5E5-22C5E9724343}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CBC456F-942D-49B8-A5E5-22C5E9724343}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CBC456F-942D-49B8-A5E5-22C5E9724343}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CBC456F-942D-49B8-A5E5-22C5E9724343}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9029F87-AB43-4934-ACC0-728959232FA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9029F87-AB43-4934-ACC0-728959232FA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9029F87-AB43-4934-ACC0-728959232FA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9029F87-AB43-4934-ACC0-728959232FA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6332B8AC-8FD3-48CC-BD6C-EB69742E80E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6332B8AC-8FD3-48CC-BD6C-EB69742E80E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6332B8AC-8FD3-48CC-BD6C-EB69742E80E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6332B8AC-8FD3-48CC-BD6C-EB69742E80E1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6332B8AC-8FD3-48CC-BD6C-EB69742E80E1} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+	EndGlobalSection
+EndGlobal

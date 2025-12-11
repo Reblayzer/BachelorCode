@@ -23,6 +23,9 @@ describe("LoginPage", () => {
     vi.clearAllMocks();
   });
 
+  const getPasswordInput = () =>
+    screen.getByLabelText(/password/i, { selector: "input" });
+
   it("renders login form", () => {
     render(<LoginPage />);
 
@@ -30,7 +33,7 @@ describe("LoginPage", () => {
       screen.getByRole("heading", { name: /welcome back/i })
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(getPasswordInput()).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /sign in/i })
     ).toBeInTheDocument();
@@ -61,7 +64,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByLabelText(/password/i), "password123");
+    await user.type(getPasswordInput(), "password123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
@@ -87,7 +90,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByLabelText(/password/i), "password123");
+    await user.type(getPasswordInput(), "password123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     expect(screen.getByRole("button", { name: /signing in/i })).toBeDisabled();
@@ -102,7 +105,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByLabelText(/password/i), "password123");
+    await user.type(getPasswordInput(), "password123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
@@ -121,7 +124,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByLabelText(/password/i), "wrongpassword");
+    await user.type(getPasswordInput(), "wrongpassword");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
@@ -140,7 +143,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByLabelText(/password/i), "password123");
+    await user.type(getPasswordInput(), "password123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
@@ -155,7 +158,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), "test@example.com");
-    await user.type(screen.getByLabelText(/password/i), "password123");
+    await user.type(getPasswordInput(), "password123");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => {
@@ -169,7 +172,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     const emailInput = screen.getByLabelText(/email/i);
-    const passwordInput = screen.getByLabelText(/password/i);
+    const passwordInput = getPasswordInput();
 
     expect(emailInput).toBeRequired();
     expect(passwordInput).toBeRequired();
@@ -179,7 +182,7 @@ describe("LoginPage", () => {
     render(<LoginPage />);
 
     expect(screen.getByLabelText(/email/i)).toHaveAttribute("type", "email");
-    expect(screen.getByLabelText(/password/i)).toHaveAttribute(
+    expect(getPasswordInput()).toHaveAttribute(
       "type",
       "password"
     );
@@ -192,7 +195,7 @@ describe("LoginPage", () => {
       "autocomplete",
       "email"
     );
-    expect(screen.getByLabelText(/password/i)).toHaveAttribute(
+    expect(getPasswordInput()).toHaveAttribute(
       "autocomplete",
       "current-password"
     );

@@ -24,6 +24,9 @@ describe("ResetPasswordPage", () => {
     vi.clearAllMocks();
   });
 
+  const getPasswordInput = (label: RegExp) =>
+    screen.getByLabelText(label, { selector: "input" });
+
   it("renders reset password form with valid token", () => {
     render(<ResetPasswordPage />);
 
@@ -33,8 +36,8 @@ describe("ResetPasswordPage", () => {
     expect(
       screen.getByText(/enter your new password below/i)
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/^new password$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+    expect(getPasswordInput(/^new password$/i)).toBeInTheDocument();
+    expect(getPasswordInput(/confirm password/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /reset password/i })
     ).toBeInTheDocument();
@@ -46,9 +49,9 @@ describe("ResetPasswordPage", () => {
 
     render(<ResetPasswordPage />);
 
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getPasswordInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm password/i),
+      getPasswordInput(/confirm password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /reset password/i }));
@@ -68,9 +71,9 @@ describe("ResetPasswordPage", () => {
 
     render(<ResetPasswordPage />);
 
-    await user.type(screen.getByLabelText(/^new password$/i), "password123");
+    await user.type(getPasswordInput(/^new password$/i), "password123");
     await user.type(
-      screen.getByLabelText(/confirm password/i),
+      getPasswordInput(/confirm password/i),
       "differentpassword"
     );
     await user.click(screen.getByRole("button", { name: /reset password/i }));
@@ -84,8 +87,8 @@ describe("ResetPasswordPage", () => {
 
     render(<ResetPasswordPage />);
 
-    await user.type(screen.getByLabelText(/^new password$/i), "short");
-    await user.type(screen.getByLabelText(/confirm password/i), "short");
+    await user.type(getPasswordInput(/^new password$/i), "short");
+    await user.type(getPasswordInput(/confirm password/i), "short");
     await user.click(screen.getByRole("button", { name: /reset password/i }));
 
     expect(
@@ -102,9 +105,9 @@ describe("ResetPasswordPage", () => {
 
     render(<ResetPasswordPage />);
 
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getPasswordInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm password/i),
+      getPasswordInput(/confirm password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /reset password/i }));
@@ -120,9 +123,9 @@ describe("ResetPasswordPage", () => {
 
     render(<ResetPasswordPage />);
 
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getPasswordInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm password/i),
+      getPasswordInput(/confirm password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /reset password/i }));
@@ -140,9 +143,9 @@ describe("ResetPasswordPage", () => {
 
     render(<ResetPasswordPage />);
 
-    await user.type(screen.getByLabelText(/^new password$/i), "newpassword123");
+    await user.type(getPasswordInput(/^new password$/i), "newpassword123");
     await user.type(
-      screen.getByLabelText(/confirm password/i),
+      getPasswordInput(/confirm password/i),
       "newpassword123"
     );
     await user.click(screen.getByRole("button", { name: /reset password/i }));
@@ -157,7 +160,7 @@ describe("ResetPasswordPage", () => {
   it("requires password fields", () => {
     render(<ResetPasswordPage />);
 
-    expect(screen.getByLabelText(/^new password$/i)).toBeRequired();
-    expect(screen.getByLabelText(/^confirm password$/i)).toBeRequired();
+    expect(getPasswordInput(/^new password$/i)).toBeRequired();
+    expect(getPasswordInput(/^confirm password$/i)).toBeRequired();
   });
 });

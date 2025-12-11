@@ -1,15 +1,22 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using IdentityService.Api.DTOs;
+using IdentityService.Infrastructure.Config;
 using IdentityService.Infrastructure.Email;
 using IdentityService.Infrastructure.Services;
 using IdentityService.Application.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace IdentityService.Api.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v{version:apiVersion}/auth")]
+[ApiVersion("1.0")]
 public sealed class AuthController : ControllerBase
 {
     private readonly IUserService _users;
@@ -17,19 +24,25 @@ public sealed class AuthController : ControllerBase
     private readonly IEmailSender _email;
     private readonly IConfirmationLinkGenerator _linkGenerator;
     private readonly ILogger<AuthController> _logger;
+    private readonly JwtSettings _jwtSettings;
+    private readonly IHostEnvironment _env;
 
     public AuthController(
         IUserService users,
         IJwtService jwtService,
         IEmailSender email,
         IConfirmationLinkGenerator linkGenerator,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        IOptions<JwtSettings> jwtSettings,
+        IHostEnvironment env)
     {
         _users = users;
         _jwtService = jwtService;
         _email = email;
         _linkGenerator = linkGenerator;
         _logger = logger;
+        _jwtSettings = jwtSettings.Value;
+        _env = env;
     }
 
     [HttpPost("register")]
@@ -56,8 +69,12 @@ public sealed class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send confirmation email to {Email}", dto.Email);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { message = "Failed to send confirmation email." });
+            // In development, return success but surface the link so the flow can continue.
+            return Accepted(new
+            {
+                message = "Registration created, but failed to send confirmation email.",
+                confirmationLink = _env.IsDevelopment() ? url : null
+            });
         }
 
         return Accepted(new { message = "Registration successful. Check your email to confirm." });
@@ -102,8 +119,11 @@ public sealed class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to resend confirmation email to {Email}", email);
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { message = "Failed to send confirmation email." });
+            return Accepted(new
+            {
+                message = "Confirmation token generated, but failed to send email.",
+                confirmationLink = _env.IsDevelopment() ? url : null
+            });
         }
 
         return Accepted(new { message = "Confirmation email sent." });
@@ -205,5 +225,63 @@ public sealed class AuthController : ControllerBase
             return BadRequest(new { message = "Invalid or expired reset token." });
 
         return Ok(new { message = "Password reset successfully." });
+    }
+
+    /// <summary>
+    /// Token introspection endpoint for other microservices to validate JWT tokens
+    /// </summary>
+    [HttpPost("introspect")]
+    public async Task<IActionResult> Introspect([FromBody] IntrospectRequest request)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var validationParams = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey)),
+            ValidateIssuer = true,
+            ValidIssuer = _jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = _jwtSettings.Audience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        try
+        {
+            var principal = handler.ValidateToken(request.Token, validationParams, out var validatedToken);
+            var jwtToken = validatedToken as JwtSecurityToken;
+
+            var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Ok(new IntrospectResponse(Active: false));
+            }
+
+            // Verify user still exists and is active
+            var (id, userEmail) = await _users.FindByIdAsync(Guid.Parse(userId));
+            if (id is null)
+            {
+                return Ok(new IntrospectResponse(Active: false));
+            }
+
+            return Ok(new IntrospectResponse(
+                Active: true,
+                UserId: userId,
+                Email: email ?? userEmail,
+                Exp: jwtToken?.ValidTo != null ? new DateTimeOffset(jwtToken.ValidTo).ToUnixTimeSeconds() : null,
+                Issuer: _jwtSettings.Issuer
+            ));
+        }
+        catch (SecurityTokenExpiredException)
+        {
+            return Ok(new IntrospectResponse(Active: false));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Token introspection failed");
+            return Ok(new IntrospectResponse(Active: false));
+        }
     }
 }

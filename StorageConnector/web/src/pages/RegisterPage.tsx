@@ -112,10 +112,6 @@ export const RegisterPage = () => {
             >
               Create account
             </Button>
-            <p className="text-xs text-slate-500">
-              By creating an account you agree to the StorageConnector terms of
-              service and privacy notice.
-            </p>
           </form>
         </Card>
       </div>

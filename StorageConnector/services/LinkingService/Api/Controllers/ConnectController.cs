@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using LinkingService.Application;
@@ -10,7 +11,8 @@ using Microsoft.Extensions.Options;
 namespace LinkingService.Api.Controllers;
 
 [ApiController]
-[Route("api/connect")]
+[Route("api/v{version:apiVersion}/connect")]
+[ApiVersion("1.0")]
 [Authorize]
 public sealed class ConnectController : ControllerBase
 {
@@ -35,7 +37,8 @@ public sealed class ConnectController : ControllerBase
     public async Task<IActionResult> Start([FromRoute] ProviderType provider)
     {
         var userId = User.RequireUserId();
-        var redirect = new Uri($"{Request.Scheme}://{Request.Host}/api/connect/{provider}/callback");
+        // Always include the API version segment so the callback hits this controller
+        var redirect = new Uri($"{Request.Scheme}://{Request.Host}/api/v1/connect/{provider}/callback");
         var url = await _service.StartAsync(userId, provider, redirect, _scopes.For(provider));
         return Ok(new { redirectUrl = url.ToString() });
     }
@@ -44,7 +47,8 @@ public sealed class ConnectController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Callback([FromRoute] ProviderType provider, [FromQuery] string state, [FromQuery] string code)
     {
-        var redirect = new Uri($"{Request.Scheme}://{Request.Host}/api/connect/{provider}/callback");
+        // Must match the redirect URI registered with the provider
+        var redirect = new Uri($"{Request.Scheme}://{Request.Host}/api/v1/connect/{provider}/callback");
         await _service.ConnectCallbackAsync(state, code, redirect);
         return Redirect($"{_frontendBaseUrl}/connections/success?provider={provider}");
     }

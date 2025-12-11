@@ -12,6 +12,9 @@ describe("RegisterPage", () => {
     vi.clearAllMocks();
   });
 
+  const getPasswordInput = (label: RegExp) =>
+    screen.getByLabelText(label, { selector: "input" });
+
   it("renders registration form", () => {
     render(<RegisterPage />);
 
@@ -19,8 +22,8 @@ describe("RegisterPage", () => {
       screen.getByRole("heading", { name: /create your account/i })
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/^email$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+    expect(getPasswordInput(/^password$/i)).toBeInTheDocument();
+    expect(getPasswordInput(/confirm password/i)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /create account/i })
     ).toBeInTheDocument();
@@ -44,8 +47,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/confirm password/i), "password123");
+    await user.type(getPasswordInput(/^password$/i), "password123");
+    await user.type(getPasswordInput(/confirm password/i), "password123");
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
@@ -59,9 +62,9 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
+    await user.type(getPasswordInput(/^password$/i), "password123");
     await user.type(
-      screen.getByLabelText(/confirm password/i),
+      getPasswordInput(/confirm password/i),
       "differentpassword"
     );
     await user.click(screen.getByRole("button", { name: /create account/i }));
@@ -76,8 +79,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "short");
-    await user.type(screen.getByLabelText(/confirm password/i), "short");
+    await user.type(getPasswordInput(/^password$/i), "short");
+    await user.type(getPasswordInput(/confirm password/i), "short");
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(
@@ -95,8 +98,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/confirm password/i), "password123");
+    await user.type(getPasswordInput(/^password$/i), "password123");
+    await user.type(getPasswordInput(/confirm password/i), "password123");
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
@@ -111,8 +114,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "existing@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/confirm password/i), "password123");
+    await user.type(getPasswordInput(/^password$/i), "password123");
+    await user.type(getPasswordInput(/confirm password/i), "password123");
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
@@ -129,8 +132,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/confirm password/i), "password123");
+    await user.type(getPasswordInput(/^password$/i), "password123");
+    await user.type(getPasswordInput(/confirm password/i), "password123");
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
@@ -147,8 +150,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/confirm password/i), "password123");
+    await user.type(getPasswordInput(/^password$/i), "password123");
+    await user.type(getPasswordInput(/confirm password/i), "password123");
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
@@ -166,8 +169,8 @@ describe("RegisterPage", () => {
 
     render(<RegisterPage />);
 
-    const passwordInput = screen.getByLabelText(/^password$/i);
-    const confirmInput = screen.getByLabelText(/confirm password/i);
+    const passwordInput = getPasswordInput(/^password$/i);
+    const confirmInput = getPasswordInput(/confirm password/i);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
     await user.type(passwordInput, "password123");
@@ -184,8 +187,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     expect(screen.getByLabelText(/^email$/i)).toBeRequired();
-    expect(screen.getByLabelText(/^password$/i)).toBeRequired();
-    expect(screen.getByLabelText(/confirm password/i)).toBeRequired();
+    expect(getPasswordInput(/^password$/i)).toBeRequired();
+    expect(getPasswordInput(/confirm password/i)).toBeRequired();
   });
 
   it("renders terms of service text", () => {
@@ -214,8 +217,8 @@ describe("RegisterPage", () => {
     render(<RegisterPage />);
 
     await user.type(screen.getByLabelText(/^email$/i), "test@example.com");
-    await user.type(screen.getByLabelText(/^password$/i), "password123");
-    await user.type(screen.getByLabelText(/confirm password/i), "password123");
+    await user.type(getPasswordInput(/^password$/i), "password123");
+    await user.type(getPasswordInput(/confirm password/i), "password123");
     await user.click(screen.getByRole("button", { name: /create account/i }));
 
     await waitFor(() => {
