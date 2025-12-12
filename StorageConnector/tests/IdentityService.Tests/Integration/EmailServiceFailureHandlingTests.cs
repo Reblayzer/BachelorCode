@@ -22,7 +22,7 @@ public class EmailServiceFailureHandlingTests : IClassFixture<WebApplicationFact
   }
 
   [Fact]
-  public async Task Register_Returns500_WhenEmailSenderThrows()
+  public async Task Register_ReturnsAccepted_WithConfirmationLink_WhenEmailSenderThrows()
   {
     var factory = _factory.WithWebHostBuilder(builder =>
     {
@@ -51,11 +51,16 @@ public class EmailServiceFailureHandlingTests : IClassFixture<WebApplicationFact
     var payload = new { email = "x@x.com", password = "Password123!" };
     var resp = await client.PostAsync("/api/v1/auth/register", new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
 
-    Assert.Equal(HttpStatusCode.InternalServerError, resp.StatusCode);
+    Assert.Equal(HttpStatusCode.Accepted, resp.StatusCode);
+
+    using var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+    Assert.Equal("Registration created, but failed to send confirmation email.", json.RootElement.GetProperty("message").GetString());
+    // In development the fallback confirmation link should be returned so the flow can continue.
+    Assert.True(json.RootElement.TryGetProperty("confirmationLink", out _));
   }
 
   [Fact]
-  public async Task Resend_Returns500_WhenEmailSenderThrows()
+  public async Task Resend_ReturnsAccepted_WithConfirmationLink_WhenEmailSenderThrows()
   {
     var userId = Guid.NewGuid();
 
@@ -82,6 +87,9 @@ public class EmailServiceFailureHandlingTests : IClassFixture<WebApplicationFact
     var payload = new { email = "u@u.com", password = "Password123!" };
     var resp = await client.PostAsync("/api/v1/auth/resend-confirmation", new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
 
-    Assert.Equal(HttpStatusCode.InternalServerError, resp.StatusCode);
+    Assert.Equal(HttpStatusCode.Accepted, resp.StatusCode);
+    using var json = JsonDocument.Parse(await resp.Content.ReadAsStringAsync());
+    Assert.Equal("Confirmation token generated, but failed to send email.", json.RootElement.GetProperty("message").GetString());
+    Assert.True(json.RootElement.TryGetProperty("confirmationLink", out _));
   }
 }

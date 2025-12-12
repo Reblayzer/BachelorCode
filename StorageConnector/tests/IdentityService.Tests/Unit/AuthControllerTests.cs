@@ -12,6 +12,7 @@ using IdentityService.Infrastructure.Services;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Options;
 using IdentityService.Infrastructure.Config;
+using Microsoft.Extensions.Hosting;
 
 namespace IdentityService.Tests.Unit;
 
@@ -21,7 +22,7 @@ public sealed class AuthControllerTests
     public async Task Register_ReturnsAccepted_WhenUserCreatedSuccessfully()
     {
         var userId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-        var userService = new Mock<Application.Interfaces.IUserService>();
+        var userService = new Mock<IUserService>();
         userService.Setup(u => u.CreateAsync("user@example.com", "Password123!"))
             .ReturnsAsync((true, Array.Empty<string>(), userId));
         userService.Setup(u => u.GenerateEmailConfirmationTokenAsync(userId))
@@ -31,7 +32,7 @@ public sealed class AuthControllerTests
 
         var controller = BuildController(userService.Object, emailSender.Object);
 
-        var dto = new RegisterDto("user@example.com", "Password123!");
+        var dto = new RegisterDto { Email = "user@example.com", Password = "Password123!" };
 
         var result = await controller.Register(dto);
 
@@ -46,13 +47,13 @@ public sealed class AuthControllerTests
     [Fact]
     public async Task Register_ReturnsBadRequest_WhenUserCreationFails()
     {
-        var userService = new Mock<Application.Interfaces.IUserService>();
+        var userService = new Mock<IUserService>();
         userService.Setup(u => u.CreateAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync((false, ["Email already used"], null));
 
         var emailSender = new Mock<IEmailSender>();
         var controller = BuildController(userService.Object, emailSender.Object);
-        var dto = new RegisterDto("user@example.com", "Password123!");
+        var dto = new RegisterDto { Email = "user@example.com", Password = "Password123!" };
 
         var result = await controller.Register(dto);
 
@@ -68,7 +69,7 @@ public sealed class AuthControllerTests
 
         var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
 
-        var result = await controller.Login(new LoginDto("missing@example.com", "whatever"));
+        var result = await controller.Login(new LoginDto { Email = "missing@example.com", Password = "whatever" });
 
         Assert.IsType<UnauthorizedResult>(result);
     }
@@ -83,7 +84,7 @@ public sealed class AuthControllerTests
         userService.Setup(u => u.IsEmailConfirmedAsync(userId)).ReturnsAsync(false);
 
         var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
-        var result = await controller.Login(new LoginDto(email, "Password123!"));
+        var result = await controller.Login(new LoginDto { Email = email, Password = "Password123!" });
 
         Assert.IsType<ForbidResult>(result);
         userService.Verify(u => u.ValidateCredentialsAsync(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
@@ -109,7 +110,7 @@ public sealed class AuthControllerTests
 
         var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
 
-        var result = await controller.Login(new LoginDto(email, "Password123!"));
+        var result = await controller.Login(new LoginDto { Email = email, Password = "Password123!" });
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -126,7 +127,7 @@ public sealed class AuthControllerTests
 
         var controller = BuildController(userService.Object, Mock.Of<IEmailSender>());
 
-        var result = await controller.Login(new LoginDto(email, "WrongPassword!"));
+        var result = await controller.Login(new LoginDto { Email = email, Password = "WrongPassword!" });
 
         Assert.IsType<UnauthorizedResult>(result);
     }
@@ -155,7 +156,10 @@ public sealed class AuthControllerTests
             ExpirationMinutes = 60
         });
 
-        var controller = new AuthController(users, jwtServiceMock.Object, email, linkGeneratorMock.Object, Mock.Of<ILogger<AuthController>>(), jwtSettings)
+        var env = new Mock<IHostEnvironment>();
+        env.SetupGet(e => e.EnvironmentName).Returns(Environments.Development);
+
+        var controller = new AuthController(users, jwtServiceMock.Object, email, linkGeneratorMock.Object, Mock.Of<ILogger<AuthController>>(), jwtSettings, env.Object)
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext },
         };
