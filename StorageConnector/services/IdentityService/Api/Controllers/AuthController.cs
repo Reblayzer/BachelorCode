@@ -227,9 +227,6 @@ public sealed class AuthController : ControllerBase
         return Ok(new { message = "Password reset successfully." });
     }
 
-    /// <summary>
-    /// Token introspection endpoint for other microservices to validate JWT tokens
-    /// </summary>
     [HttpPost("introspect")]
     public async Task<IActionResult> Introspect([FromBody] IntrospectRequest request)
     {

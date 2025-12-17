@@ -4,15 +4,9 @@ namespace LinkingService.Application.Interfaces;
 
 public interface IFileProviderFactory
 {
-  /// <summary>
-  /// Resolve an <see cref="IFileProvider"/> for the given <see cref="ProviderType"/>.
-  /// Throws if a matching provider is not registered.
-  /// </summary>
+  // Resolve a file provider for the given provider type; throws if none registered.
   IFileProvider Get(ProviderType provider);
 
-  /// <summary>
-  /// Try to resolve an <see cref="IFileProvider"/> for the given provider.
-  /// Returns true and sets <c>provider</c> when found; otherwise false.
-  /// </summary>
+  // Try to resolve a file provider for the given provider type, returning true when found.
   bool TryGet(ProviderType provider, out IFileProvider? providerInstance);
 }

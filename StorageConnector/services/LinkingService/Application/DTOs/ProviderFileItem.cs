@@ -2,9 +2,7 @@ using LinkingService.Domain;
 
 namespace LinkingService.Application.DTOs;
 
-/// <summary>
-/// File item with provider information for aggregated views.
-/// </summary>
+// File item with provider information used in aggregated views.
 public sealed record ProviderFileItem(
     string Id,
     string Name,

@@ -3,49 +3,21 @@ using LinkingService.Domain;
 
 namespace LinkingService.Application.Interfaces;
 
-/// <summary>
-/// Service that orchestrates file operations across multiple cloud storage providers.
-/// Aggregates files from all linked providers for a unified view.
-/// </summary>
+// Orchestrates file operations across providers and aggregates linked accounts for a unified view.
 public interface IFileService
 {
-  /// <summary>
-  /// Get files from all linked providers for the authenticated user.
-  /// </summary>
-  /// <param name="userId">The user ID</param>
-  /// <param name="pageSize">Number of items per provider (default 50)</param>
-  /// <returns>List of files with provider information</returns>
+  // Get files from all linked providers for the user.
   Task<IReadOnlyList<ProviderFileItem>> GetFilesFromAllProvidersAsync(
       Guid userId, int pageSize = 50);
 
-  /// <summary>
-  /// Get files from a specific provider.
-  /// </summary>
-  /// <param name="userId">The user ID</param>
-  /// <param name="provider">The provider type</param>
-  /// <param name="folderId">Optional folder ID to list files from</param>
-  /// <param name="pageSize">Number of items per page</param>
-  /// <param name="pageToken">Pagination token from previous request</param>
-  /// <returns>List of files and next page token</returns>
+  // Get files from a specific provider, with paging and optional folder scope.
   Task<(IReadOnlyList<FileItem> items, string? nextPageToken)> GetFilesByProviderAsync(
       Guid userId, ProviderType provider, string? folderId = null,
       int pageSize = 50, string? pageToken = null);
 
-  /// <summary>
-  /// Get detailed metadata for a specific file.
-  /// </summary>
-  /// <param name="userId">The user ID</param>
-  /// <param name="provider">The provider type</param>
-  /// <param name="fileId">The file ID</param>
-  /// <returns>File metadata</returns>
+  // Get detailed metadata for a file from a given provider.
   Task<FileMetadata> GetFileMetadataAsync(Guid userId, ProviderType provider, string fileId);
 
-  /// <summary>
-  /// Get the web view URL for a file.
-  /// </summary>
-  /// <param name="userId">The user ID</param>
-  /// <param name="provider">The provider type</param>
-  /// <param name="fileId">The file ID</param>
-  /// <returns>Web view URI</returns>
+  // Get the web view URL for a file from a given provider.
   Task<Uri> GetFileViewUrlAsync(Guid userId, ProviderType provider, string fileId);
 }

@@ -1,8 +1,6 @@
 namespace IdentityService.Api.Middleware;
 
-/// <summary>
-/// Middleware to add security headers to all responses
-/// </summary>
+// Middleware that adds standard security headers to every response.
 public sealed class SecurityHeadersMiddleware
 {
   private readonly RequestDelegate _next;

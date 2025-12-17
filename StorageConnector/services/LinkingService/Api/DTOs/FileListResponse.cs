@@ -2,11 +2,7 @@ using LinkingService.Application.DTOs;
 
 namespace LinkingService.Api.Controllers;
 
-/// <summary>
-/// Response DTO for paginated file lists.
-/// </summary>
-/// <param name="Items">The list of files.</param>
-/// <param name="NextPageToken">Token for retrieving the next page of results.</param>
+// Response DTO for a page of files and an optional next page token.
 public sealed record FileListResponse(
     IReadOnlyList<FileItem> Items,
     string? NextPageToken

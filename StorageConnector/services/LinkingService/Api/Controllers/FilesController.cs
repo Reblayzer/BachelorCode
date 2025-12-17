@@ -24,9 +24,8 @@ public sealed class FilesController : ControllerBase
     _logger = logger;
   }
 
-  /// <summary>
-  /// Get files from all linked providers (unified dashboard view).
-  /// </summary>
+
+  // Get files from all linked providers (unified dashboard view).
   [HttpGet]
   public async Task<ActionResult<IReadOnlyList<ProviderFileItem>>> GetAllFiles(
       [FromQuery] int pageSize = 50)
@@ -40,9 +39,8 @@ public sealed class FilesController : ControllerBase
     return Ok(files);
   }
 
-  /// <summary>
-  /// Get files from a specific provider with pagination support.
-  /// </summary>
+
+  // Get files from a specific provider with pagination support.
   [HttpGet("{provider}")]
   public async Task<ActionResult<FileListResponse>> GetFilesByProvider(
       ProviderType provider,
@@ -58,9 +56,7 @@ public sealed class FilesController : ControllerBase
     return Ok(new FileListResponse(items, nextPageToken));
   }
 
-  /// <summary>
-  /// Get detailed metadata for a specific file.
-  /// </summary>
+  // Get detailed metadata for a specific file.
   [HttpGet("{provider}/{fileId}/metadata")]
   public async Task<ActionResult<FileMetadata>> GetFileMetadata(
       ProviderType provider,
@@ -73,9 +69,7 @@ public sealed class FilesController : ControllerBase
     return Ok(metadata);
   }
 
-  /// <summary>
-  /// Get the web view URL for a file (redirects to provider's web interface).
-  /// </summary>
+  // Get the web view URL for a file (redirects to provider's web interface).
   [HttpGet("{provider}/{fileId}/view")]
   public async Task<ActionResult> GetFileViewUrl(
       ProviderType provider,
@@ -88,9 +82,7 @@ public sealed class FilesController : ControllerBase
     return Redirect(viewUrl.ToString());
   }
 
-  /// <summary>
-  /// Get the web view URL for a file as JSON (for frontend to open in new tab).
-  /// </summary>
+  // Get the web view URL for a file as JSON (for frontend to open in new tab).
   [HttpGet("{provider}/{fileId}/view-url")]
   public async Task<ActionResult<FileViewUrlResponse>> GetFileViewUrlJson(
       ProviderType provider,
